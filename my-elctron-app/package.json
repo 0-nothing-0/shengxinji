@@ -1,0 +1,14 @@
+{
+  "name": "my-elctron-app",
+  "version": "1.0.0",
+  "description": "hello world",
+  "main": "main.js",
+  "devDependencies": {
+    "electron": "^31.7.7"
+  },
+  "scripts": {
+    "start": "electron ."
+  },
+  "author": "rayson12",
+  "license": "ISC"
+}
