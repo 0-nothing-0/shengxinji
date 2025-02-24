@@ -10,12 +10,22 @@
       http-equiv="X-Content-Security-Policy"
       content="default-src 'self'; script-src 'self'"
     />
-    <title>Hello from Electron renderer!</title>
+    <link rel="stylesheet" type="text/css" href="./css/mainpage.css">
+    <title>省心计</title>
   </head>
   <body>
-    <h1>Hello from Electron renderer!</h1>
-    <p>👋</p>
-    <p id="info"></p>
+    <div>
+      <button id="addLedgerBtn">添加账本 +</button>
+      <!-- 输入账本名称 -->
+      <div id="ledgerModal" class="modal">
+        <div class="modal-content">
+          <span class="close" id="closeBtn">&times;</span>
+          <h3>新建账本</h3>
+          <input type="text" id="ledgerNameInput" placeholder="输入账本名称">
+          <button id="confirmBtn">确认创建</button>
+        </div>
+      </div>
+    </div>
   </body>
   <script src="./renderer.js"></script>
 </html>
