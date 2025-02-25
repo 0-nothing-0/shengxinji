@@ -39,6 +39,7 @@ confirmBtn.onclick = async () => {
 
     if (ledgerRes === "success") {
       await myalert('账本创建成功！', 'info');
+      loadLedgers();
       ledgerModal.style.display = 'none';
     } else {
       switch (ledgerRes) {
@@ -65,3 +66,27 @@ closeBtn.onclick = () => {
   ledgerModal.style.display = 'none';
   ledgerNameInput.value = '';
 };
+// 获取账本列表并显示
+async function loadLedgers() {
+  try {
+    const ledgers = await window.ledger_api.getLedgerList();
+    const ledgerList = document.getElementById('ledger-list');
+    ledgerList.innerHTML = ''; // 清空当前列表
+    console.log('ledgers:', ledgers);
+    if (ledgers.length > 0) {
+      ledgers.forEach((ledger) => {
+        const listItem = document.createElement('li');
+        listItem.textContent = `ID: ${ledger[0]}, 名称: ${ledger[1]}`;
+        ledgerList.appendChild(listItem);
+      });
+    } else {
+      const listItem = document.createElement('li');
+      listItem.textContent = '暂无账本';
+      ledgerList.appendChild(listItem);
+    }
+  } catch (error) {
+    console.error('获取账本列表失败:', error);
+  }
+}
+// 页面加载时获取账本列表
+window.onload = loadLedgers;

@@ -2,7 +2,7 @@
 const { app, BrowserWindow, ipcMain ,dialog} = require('electron')
 const Path = require('path')
 const { spawn } = require('child_process');
-const { console } = require('inspector');
+//const { console } = require('inspector');
 let win;
 const createWindow = () => {
    win = new BrowserWindow({
@@ -33,7 +33,7 @@ app.on('window-all-closed', () => {
     app.quit()
   }
 })
-
+console.log('app started')
 // 监听渲染进程发出的创建账本请求
 ipcMain.on('create-ledger', (event, ledgerName) => {
   console.log('creating ', ledgerName);
@@ -73,4 +73,25 @@ ipcMain.on('create-ledger', (event, ledgerName) => {
 ipcMain.handle('show-dialog', async (event, options) => {
   console.log('showing dialog', options);
   return dialog.showMessageBox(win, options);
+});
+
+// 处理获取账本列表的请求
+ipcMain.handle('get-ledgers', async () => {
+  return new Promise((resolve, reject) => {
+    const pythonProcess = spawn('python', [Path.join(__dirname, './python/get_ledger.py'), 'get-ledgers']);
+
+    pythonProcess.stdout.on('data', (data) => {
+      const ledgers = JSON.parse(data.toString());
+      resolve(ledgers);
+    });
+
+    pythonProcess.stderr.on('data', (data) => {
+      console.error('Python error:', data.toString());
+      reject([]);
+    });
+
+    pythonProcess.on('close', (code) => {
+      console.log(`Python closed, code: ${code}`);
+    });
+  });
 });

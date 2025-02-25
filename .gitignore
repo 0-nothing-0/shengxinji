@@ -137,3 +137,7 @@ dist
 
 # vscode
 .vscode
+
+#sqlite3
+*.sqlite3-journal
+*.db

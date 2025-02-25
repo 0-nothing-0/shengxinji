@@ -13,6 +13,7 @@ contextBridge.exposeInMainWorld('ledger_api', {
       callback(ledgerRes);
     });
   },
+  getLedgerList: () => ipcRenderer.invoke('get-ledgers')
 });
 contextBridge.exposeInMainWorld('electronAPI', {
   myalert: (options) => ipcRenderer.invoke('show-dialog', options) // 暴露 myalert 方法
