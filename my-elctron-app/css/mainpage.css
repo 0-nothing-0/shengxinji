@@ -1,4 +1,4 @@
-#addLedgerBtn {
+/* #addLedgerBtn {
     position: absolute;
     top: 10px;
     right: 10px;
@@ -11,12 +11,12 @@
   }
 #addLedgerBtn:hover {
      background-color: #3e8e41;
-}
+} */
 
 #ledgerModal.modal {
     display: none; /* 默认隐藏 */
     position: fixed; /* 固定位置 */
-    z-index: 1; /* 确保在其他内容之上 */
+    z-index: 100; /* 确保在其他内容之上 */
     left: 25%;
     top: 10%;
     width: 50%;
@@ -47,3 +47,72 @@
     text-decoration: none;
     cursor: pointer;
 }
+body {
+    margin: 0;
+    padding: 20px;
+    background-color: #f5f5f5;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .ledger-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 80px);
+    gap: 20px;
+    justify-content: center;
+    margin-bottom: 30px;
+    max-height: 420px; /* (120px + 20px gap) * 3 rows */
+    overflow: hidden;
+  }
+
+  .ledger-item {
+    width: 80px;
+    height: 120px;
+    background: rgb(53, 11, 222);
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 14px;
+    text-align: center;
+    padding: 8px;
+    user-select: none;
+  }
+
+  .ledger-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+
+  .add-button {
+    background: #1b1b8f;
+    border: 2px dashed #ccc;
+    color: #666;
+    font-size: 24px;
+  }
+
+  .pagination {
+    margin-top: auto;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    padding: 20px 0;
+  }
+
+  .page-btn {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    background: white;
+  }
+
+  .page-btn.active {
+    background: #007bff;
+    color: white;
+    border-color: #007bff;
+  }

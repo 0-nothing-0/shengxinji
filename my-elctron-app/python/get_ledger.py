@@ -5,7 +5,7 @@ import json
 def get_ledgers():
     conn = sqlite3.connect('ledger.db')
     cursor = conn.cursor()
-    cursor.execute('SELECT id, name FROM ledgers')
+    cursor.execute('SELECT id, name FROM ledgers ORDER BY id DESC')  # 按ID倒序
     ledgers = cursor.fetchall()
     conn.close()
     return ledgers

@@ -83,6 +83,7 @@ ipcMain.handle('get-ledgers', async () => {
     pythonProcess.stdout.on('data', (data) => {
       const ledgers = JSON.parse(data.toString());
       resolve(ledgers);
+      console.log('ledgers:', ledgers);
     });
 
     pythonProcess.stderr.on('data', (data) => {
