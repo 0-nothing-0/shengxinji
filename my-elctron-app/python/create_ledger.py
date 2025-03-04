@@ -2,6 +2,8 @@ import sqlite3
 import sys
 import json
 import re
+import subprocess
+import os
 
 # 初始化数据库
 def initialize_db():
@@ -43,16 +45,26 @@ def create_ledger(ledger_name):
         conn.close()
 
 if __name__ == "__main__":
-    initialize_db()  # 确保数据库和表存在
+    if sys.argv[1] == "clear" and sys.argv[2] == "yes":
+        if os.path.exists("ledger.db"):
+            os.remove("ledger.db")
+            print("数据库已清空")
+    else:         
+        initialize_db()  # 确保数据库和表存在
 
-    if len(sys.argv) != 2:
-        print(json.dumps({"status": "error", "message": "请提供账本名称作为参数！"}))
-    else:
-        ledger_name = sys.argv[1]
-        validation_result = is_valid_ledger_name(ledger_name)
-        if validation_result == "empty":
-            print(json.dumps({"status": "empty", "message": "账本名称不能为空！"}))
-        elif validation_result == "illegal":
-            print(json.dumps({"status": "illegal", "message": "账本名称包含非法字符！"}))
+        if len(sys.argv) != 2:
+            print(json.dumps({"status": "error", "message": "请提供账本名称作为参数！"}))
         else:
-            create_ledger(ledger_name)
+            ledger_name = sys.argv[1]
+            validation_result = is_valid_ledger_name(ledger_name)
+            if validation_result == "empty":
+                print(json.dumps({"status": "empty", "message": "账本名称不能为空！"}))
+            elif validation_result == "illegal":
+                print(json.dumps({"status": "illegal", "message": "账本名称包含非法字符！"}))
+            else:
+                create_ledger(ledger_name)
+                subprocess.run(
+                ["python", "./python/init_db.py", "--ledger_name", ledger_name],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
