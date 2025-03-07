@@ -14,7 +14,8 @@
     <title>省心计</title>
   </head>
   <body>
-    <h2>账本列表</h2>
+  <div id="ledger-list" class = "view">
+      <h2>账本列表</h2>
     <div class="ledger-grid" id="ledger-grid">
       <!-- 账本项和添加按钮将通过JS动态生成 -->
     </div>
@@ -24,11 +25,38 @@
         </div>
         <div id="ledgerModal" class="modal">
           <div class="modal-content">
-            <span class="close" id="closeBtn">&times;</span>
+            <span class="close " id="ledgerModalCloseBtn">&times;</span>
             <h3>新建账本</h3>
             <input type="text" id="ledgerNameInput" placeholder="输入账本名称">
-            <button id="confirmBtn">确认创建</button>
+            <button id="ledgerModalconfirmBtn" class ="cfmBtn">确认创建</button>
           </div>
+        </div> 
+  </div>
+  <div id="ledger-detail" class="view" >
+    <div id="month-list"></div>
+    <div id="accounts"></div>
+    <div id="account-list"></div>
+    <button id="importBtn" >导入</button>
+    <button id="addAccountBtn" >新建记录</button>
+    <div id="importModal" class="modal">
+      <div class="modal-content">
+        <span class="close" id="importModalCloseBtn">&times;</span>
+        <h3>导入记录</h3>
+        <input type="file" accept=".csv" id="importFileInput" placeholder="输入导入路径">
+        <button id="importModalconfirmBtn" class ="cfmBtn">确认</button>
+        <div id="import-entries-container">
+      </div>
+    </div> 
+    <div id="addAccountModal" class="modal">
+        <span class="close" id="addAccountModalCloseBtn">&times;</span>
+        <h3>新建记录</h3>
+        <input type="text" id="addAccountInput" placeholder="输入记录名称">
+        <input type="text" id="addAccountMoneyInput" placeholder="输入金额">
+        <button id="addAccountModalconfirmBtn" class ="cfmBtn">确认创建</button>
+    </div> 
+    </div> 
+  </div>
   </body>
   <script src="./renderer.js"></script>
+  <script src="./view_manager.js"></script>
 </html>

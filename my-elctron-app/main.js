@@ -96,3 +96,72 @@ ipcMain.handle('get-ledgers', async () => {
     });
   });
 });
+const query_path = require('path');
+
+// 获取月流水
+ipcMain.handle('get-accounts', async (event, ledgerId, year, month, category, note, amountRange, timeRange) => {
+  return new Promise((resolve, reject) => {
+    const args = [
+      query_path.join(__dirname, './python/query.py'),
+      '--ledgerid', ledgerId.toString()
+    ];
+
+    if (year) args.push('-y', year.toString());
+    if (month) args.push('-m', month.toString());
+    if (category) args.push('--category', category);
+    if (note) args.push('--note', note);
+    if (amountRange) args.push('--amount', ...amountRange.map(String));
+    if (timeRange) args.push('--time', ...timeRange);
+
+    const pythonProcess = spawn('python', args);
+
+    pythonProcess.stdout.on('data', (data) => {
+      const accounts = JSON.parse(data.toString());
+      resolve(accounts);
+      console.log('accounts:', accounts);
+    });
+
+    pythonProcess.stderr.on('data', (data) => {
+      console.error('Python error:', data.toString());
+      reject([]);
+    });
+
+    pythonProcess.on('close', (code) => {
+      console.log(`Python closed, code: ${code}`);
+    });
+  });
+});
+
+
+ipcMain.handle('import-data', async (event, importPath,ledgerId) => {
+  return new Promise((resolve, reject) => {
+    const importProcess = spawn('python', ['./python/import.py', importPath,ledgerId.toString()],{encoding: 'gbk'});
+
+    let output = '';
+    let errorOutput = '';
+
+    importProcess.stdout.on('data', (data) => {
+      output += data.toString();
+      //console.log(output);
+    });
+
+    importProcess.stderr.on('data', (data) => {
+      errorOutput += data.toString();
+    });
+
+    importProcess.on('close', (code) => {
+      if (code === 0) {
+        try {
+          const result = JSON.parse(output.trim());
+          //console.log('import result:', result);
+          resolve(result);
+        } catch (error) {
+          reject({ success: false, message: '解析导入结果失败' });
+        }
+      } else {
+        reject({ success: false, message: errorOutput || '导入失败' });
+      }
+    });
+  });
+});
+

@@ -13,7 +13,7 @@
      background-color: #3e8e41;
 } */
 
-#ledgerModal.modal {
+.modal {
     display: none; /* 默认隐藏 */
     position: fixed; /* 固定位置 */
     z-index: 100; /* 确保在其他内容之上 */
@@ -25,7 +25,7 @@
     background-color: rgba(0,0,0,0.4); /* 半透明背景 */
 }
 
-#ledgerModal.modal-content {
+.modal-content {
     background-color: #fefefe;
     margin: 15% auto;
     padding: 20px;
@@ -115,4 +115,7 @@ body {
     background: #007bff;
     color: white;
     border-color: #007bff;
+  }
+  #ledger-detail {
+    display: none;
   }

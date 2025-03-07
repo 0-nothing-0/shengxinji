@@ -1,39 +1,44 @@
-import sqlite3
 import argparse
+import sqlite3
+import os
 
 # 解析命令行参数
 parser = argparse.ArgumentParser(description='Initialize or clear the ledger database.')
-parser.add_argument('--clearledgers', action='store_true', help='Clear all data in the ledgers table')
+parser.add_argument('--clear', action='store_true', help='Clear all data in the table')
+parser.add_argument('--ledger_name', type=str, default='ledger', help='Specify the name of the ledger database')
 args = parser.parse_args()
+current_dir = os.path.dirname(os.path.abspath(__file__))
+db_path = os.path.join(current_dir, '..', 'db', f"{args.ledger_name}.db")
 
-# 连接到 SQLite 数据库（如果不存在则会自动创建）
-conn = sqlite3.connect('ledger.db')
+# 如果 --clear 参数被传递，则清除数据库中的所有数据
+if args.clear:
+    if os.path.exists(db_path):
+        os.remove(db_path)
+        print(f"Database file {db_path} removed.")
+    
+# 重新建立连接
+conn = sqlite3.connect(db_path)
 cursor = conn.cursor()
 
-# 创建账本表
-cursor.execute('''
-CREATE TABLE IF NOT EXISTS ledgers (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT UNIQUE NOT NULL
-)
-''')
 
 # 创建账目表
 cursor.execute('''
 CREATE TABLE IF NOT EXISTS entries (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    ledger_id INTEGER NOT NULL,
-    type TEXT NOT NULL,  -- 收支类型（income/expense）
+    type TEXT NOT NULL,  -- 收支类型
     amount REAL NOT NULL,  -- 收支金额
     note TEXT,  -- 备注
-    FOREIGN KEY (ledger_id) REFERENCES ledgers (id)
+    category_id INTEGER,  -- 分类ID
+    category_name TEXT,  -- 分类名称
+    sub_category_id INTEGER,  -- 子分类ID
+    sub_category_name TEXT,  -- 子分类名称
+    date DATE NOT NULL,  -- 日期
+    time TIME,  -- 时间
+    FOREIGN KEY (category_id) REFERENCES categories (id),
+    FOREIGN KEY (sub_category_id) REFERENCES sub_categories (id)
 )
 ''')
 
-# 如果 --clearledgers 参数被传递，则清除 ledgers 表中的所有数据
-if args.clearledgers:
-    cursor.execute('DELETE FROM ledgers')
-    print("Ledgers table cleared.")
 
 # 创建一级分类表
 cursor.execute('''
@@ -51,6 +56,17 @@ cursor.execute('''
                 FOREIGN KEY (category_id) REFERENCES categories (id)
             )
         ''')
+
+# 创建规则表
+cursor.execute('''
+               CREATE TABLE IF NOT EXISTS rules (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+    keyword TEXT UNIQUE NOT NULL,  
+    category_id INTEGER NOT NULL,  
+    FOREIGN KEY (category_id) REFERENCES categories (id)
+            )
+    ''')
+#设置默认配置
 default_data = {
         "食品酒水": ["早午晚餐", "饮料零食", "夜宵"],
         "交通出行": ["公共交通", "打车", "自行车"],
@@ -71,9 +87,31 @@ for category, sub_categories in default_data.items():
             "INSERT OR IGNORE INTO sub_categories (sub_category_name, category_id) VALUES (?, ?)",
             (sub_category, category_id)
         )
+default_rules = {
+    "餐": "食品酒水",
+    "公交": "交通出行",
+    "地铁": "交通出行",
+    "电影": "娱乐休闲",
+    "游戏": "娱乐休闲",
+    "水电": "生活缴费",
+    "房租": "生活缴费",
+    "医院": "医疗健康",
+    "药店": "医疗健康",
+}
+for keyword, category_name in default_rules.items():
+            # 获取或插入 category_id
+            cursor.execute("SELECT id FROM categories WHERE category_name = ?", (category_name,))
+            result = cursor.fetchone()
+            if result:
+                category_id = result[0]
+            else:
+                # 如果分类不存在，插入新分类
+                cursor.execute("INSERT INTO categories (category_name) VALUES (?)", (category_name,))
+                category_id = cursor.lastrowid
 
-
-# 提交更改并关闭连
+            # 插入规则
+            cursor.execute("INSERT OR IGNORE INTO rules (keyword, category_id) VALUES (?, ?)", (keyword, category_id))
+# 提交更改并关闭连接
 conn.commit()
 conn.close()
 

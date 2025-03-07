@@ -4,10 +4,12 @@ import json
 import re
 import subprocess
 import os
-
+current_dir = os.path.dirname(os.path.abspath(__file__))
+db_path = os.path.join(current_dir, '..', 'db', 'ledger.db')
+os.makedirs(os.path.dirname(db_path), exist_ok=True)
 # 初始化数据库
 def initialize_db():
-    conn = sqlite3.connect('ledger.db')
+    conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     # 创建 ledgers 表（如果不存在）
     cursor.execute('''
@@ -30,7 +32,7 @@ def is_valid_ledger_name(ledger_name):
 
 # 创建账本
 def create_ledger(ledger_name):
-    conn = sqlite3.connect('ledger.db')
+    conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
 
     try:
@@ -46,8 +48,8 @@ def create_ledger(ledger_name):
 
 if __name__ == "__main__":
     if sys.argv[1] == "clear" and sys.argv[2] == "yes":
-        if os.path.exists("ledger.db"):
-            os.remove("ledger.db")
+        if os.path.exists(db_path):
+            os.remove(db_path)
             print("数据库已清空")
     else:         
         initialize_db()  # 确保数据库和表存在

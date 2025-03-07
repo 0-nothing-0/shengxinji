@@ -2,9 +2,13 @@ import sqlite3
 import sys
 import json
 from create_ledger import initialize_db
+import os
+current_dir = os.path.dirname(os.path.abspath(__file__))
+db_path = os.path.join(current_dir, '..', 'db', 'ledger.db')
+os.makedirs(os.path.dirname(db_path), exist_ok=True)
 def get_ledgers():
     initialize_db()
-    conn = sqlite3.connect('ledger.db')
+    conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     cursor.execute('SELECT id, name FROM ledgers ORDER BY id DESC')  # 按ID倒序
     ledgers = cursor.fetchall()

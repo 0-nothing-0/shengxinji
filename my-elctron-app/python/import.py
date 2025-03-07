@@ -2,11 +2,14 @@ import csv
 import sqlite3
 import sys
 from insert import insert_entry 
+import os
+from datetime import datetime
+import json
 
-# 连接到SQLite数据库（如果数据库不存在，则会自动创建）
-db_name = sys.argv[2]
-conn = sqlite3.connect(db_name+'.db')
-cursor = conn.cursor()
+current_dir = os.path.dirname(os.path.abspath(__file__))
+db_path = os.path.join(current_dir, '..', 'db', 'ledger.db')
+csv_file_path = ""
+db_ledgerid = 0
 
 def try_read_csv(file_path, encodings):
     """尝试用不同的编码读取CSV文件"""
@@ -44,16 +47,14 @@ def guess_category(conn, description):
     return None, None  # 如果没有匹配到分类，返回 (None, None)
 
 
-def process_csv_and_store_to_db(csv_file_path):
+def process_csv_and_store_to_db(conn,csv_file_path):
     # 尝试用不同的编码读取CSV文件
     encodings = ['utf-8', 'gbk', 'gb18030', 'big5']  # 常见的中文编码
     used_encoding = try_read_csv(csv_file_path, encodings)
 
     if used_encoding is None:
-        print(f"错误：无法读取文件 {csv_file_path}，尝试的编码包括: {', '.join(encodings)}")
-        return
+        return {"success": False, "message": "文件编码不支持"}
 
-    print(f"成功以编码 {used_encoding} 读取文件 {csv_file_path}")
 
     try:
         # 手动打开文件
@@ -91,7 +92,7 @@ def process_csv_and_store_to_db(csv_file_path):
                 amount REAL
             )
         ''')
-        
+        entries = []    
         # 遍历CSV文件的每一行
         for row in csv_reader:
            # print(row)
@@ -114,15 +115,25 @@ def process_csv_and_store_to_db(csv_file_path):
                 except ValueError:
                     print(f"警告：金额格式错误，跳过此行。金额值: {amount_str}")
                     continue
-                category_id,category_name = guess_category(description)
-
+                category_name,category_id=guess_category(conn,description)
                 # 插入数据到数据库表中
                 insert_entry(conn, transaction_type, amount, description, category_name, None, transaction_time)
-                print(f"已插入一笔交易记录: {transaction_time}, {transaction_type}, {amount}, {description}, 分类ID: {category_id}")
+                #print("ok")
+                dt = datetime.strptime(transaction_time, "%Y/%m/%d %H:%M")
+                date_part = dt.strftime("%Y-%m-%d")
+                time_part = dt.strftime("%H:%M")
+                entries.append({
+                'type': transaction_type,
+                'date': date_part,
+                'time': time_part,
+                'amount': amount,
+                'description': description,
+                "category" : category_name
+            })
 
         # 提交事务
         conn.commit()
-        print(f"数据已成功存储到数据库。")
+        return {"success": True, "entries": entries}
 
     except KeyError as e:
         print(f"错误：CSV文件缺少必要的列: {e}")
@@ -138,6 +149,22 @@ if __name__ == "__main__":
     if len(sys.argv) != 3:
         print("Usage: python process_csv.py <csv_file_path> <db_table_name>")
     else:
+        # 连接主数据库，查询账本名称
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        db_ledgerid = sys.argv[2]
         csv_file_path = sys.argv[1]
-        db_name = sys.argv[2]
-        process_csv_and_store_to_db(csv_file_path)
+        cursor.execute('SELECT name FROM ledgers WHERE id = ?', (db_ledgerid,))
+        ledger = cursor.fetchone()
+        conn.close()
+
+        if not ledger:
+            raise ValueError('账本不存在')
+
+        # 连接账本数据库
+        ledger_name = ledger[0]
+        detail_db_path = os.path.join(current_dir, '..', 'db', f'{ledger_name}.db')
+        conn = sqlite3.connect(detail_db_path)
+        cursor = conn.cursor()
+        result = process_csv_and_store_to_db(conn, csv_file_path)
+        print(json.dumps(result))
