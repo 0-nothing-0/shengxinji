@@ -16,6 +16,8 @@ contextBridge.exposeInMainWorld('ledger_api', {
   getLedgerList: () => ipcRenderer.invoke('get-ledgers')
 });
 contextBridge.exposeInMainWorld('electronAPI', {
+  addRecord: (ledgerId, record) => ipcRenderer.invoke('add-record', ledgerId, record),
+  getCategories: (ledgerid) => ipcRenderer.invoke('get-categories', ledgerid),
   myalert: (options) => ipcRenderer.invoke('show-dialog', options), // 暴露 myalert 方法
   importData: (importPath,ledgerId) => ipcRenderer.invoke('import-data', importPath,ledgerId),
   getAccounts: (ledgerId, year=null , month=null, category=null, note=null, amountLeast=null, amountMost=null, timeLatest=null, timeOldest=null) => 

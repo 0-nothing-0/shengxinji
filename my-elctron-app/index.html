@@ -38,6 +38,7 @@
     <div id="account-list"></div>
     <button id="importBtn" >导入</button>
     <button id="addAccountBtn" >新建记录</button>
+    <button id="addfromDefaultBtn" >从预设添加</button>
     <div id="importModal" class="modal">
       <div class="modal-content">
         <span class="close" id="importModalCloseBtn">&times;</span>
@@ -47,14 +48,49 @@
         <div id="import-entries-container">
       </div>
     </div> 
+    </div> 
     <div id="addAccountModal" class="modal">
-        <span class="close" id="addAccountModalCloseBtn">&times;</span>
-        <h3>新建记录</h3>
-        <input type="text" id="addAccountInput" placeholder="输入记录名称">
-        <input type="text" id="addAccountMoneyInput" placeholder="输入金额">
-        <button id="addAccountModalconfirmBtn" class ="cfmBtn">确认创建</button>
-    </div> 
-    </div> 
+      <span class="close" id="addAccountModalCloseBtn">&times;</span>
+      <h3>新建记录</h3>
+      
+      <!-- 输入记录日期 -->
+      <label for="addAccountDateInput">记录日期:</label>
+      <input type="datetime-local" id="addAccountDateInput" value="">
+
+      <!-- 输入备注 -->
+      <label for="addAccountNoteInput">备注:</label>
+      <input type="text" id="addAccountNoteInput" placeholder="输入备注">
+
+      <!-- 输入金额 -->
+      <label for="addAccountMoneyInput">金额:</label>
+      <input type="number" id="addAccountMoneyInput" placeholder="输入金额">
+
+      <!-- 输入收支类型 -->
+      <label for="addAccountTypeInput">收支类型:</label>
+      <select id="addAccountTypeInput">
+        <option value="支出" selected>支出</option>
+        <option value="收入">收入</option>
+      </select>
+
+      <!-- 选择/新建 一级分类 -->
+<label for="addAccountCategoryInput">一级分类:</label>
+<input type="text" id="addAccountCategoryInput" list="primaryCategories" placeholder="请输入/选择一级分类">
+<datalist id="primaryCategories">
+  <!-- 这里可以动态添加已有的一级分类选项 -->
+</datalist>
+
+<!-- 选择/新建 二级分类 -->
+<label for="addAccountSubCategoryInput">二级分类:</label>
+<input type="text" id="addAccountSubCategoryInput" list="subCategories" placeholder="请输入/选择二级分类">
+<datalist id="subCategories">
+  <!-- 这里可以动态添加已有的二级分类选项 -->
+</datalist>
+
+
+      <button id="addAccountModalconfirmBtn" class="cfmBtn">确认创建</button>
+
+    </div>
+    
   </div>
   </body>
   <script src="./renderer.js"></script>

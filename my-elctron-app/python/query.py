@@ -86,9 +86,9 @@ def main():
             args.ledgerid, args.year, args.month, args.category, args.note,
             amount_min, amount_max, time_latest, time_oldest
         )
-        print(json.dumps(entries, ensure_ascii=False))
+        print(json.dumps(entries))
     except Exception as e:
-        print(json.dumps({'error': str(e)}, ensure_ascii=False))
+        print(json.dumps({'error': str(e)}))
 
 if __name__ == '__main__':
     main()

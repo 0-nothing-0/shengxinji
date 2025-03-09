@@ -3,11 +3,24 @@ console.log('renderer.js is running');
 const ledgerModalcloseBtn = document.getElementById('ledgerModalCloseBtn');
 const ledgerModal = document.getElementById('ledgerModal');
 const ledgerModalconfirmBtn = document.getElementById('ledgerModalconfirmBtn');
+
 const importModalcloseBtn = document.getElementById('importModalCloseBtn');
 const improtModal = document.getElementById('importModal');
 const importFileInput = document.getElementById('importFileInput');
 const importModalconfirmBtn = document.getElementById('importModalconfirmBtn');
 const importBtn = document.getElementById('importBtn');
+
+const addAccountBtn = document.getElementById('addAccountBtn');
+const addAccountModal = document.getElementById('addAccountModal');
+const addAccountModalcloseBtn = document.getElementById('addAccountModalCloseBtn');
+const addAccountModalconfirmBtn = document.getElementById('addAccountModalconfirmBtn');
+const addAccountDateinput = document.getElementById('addAccountDateInput');
+const addAccountNoteinput = document.getElementById('addAccountNoteInput');
+const addAcountMoneyinput = document.getElementById('addAccountMoneyInput');
+const addAccountTypeinput = document.getElementById('addAccountTypeInput');
+const addAccountCategoryinput = document.getElementById('addAccountCategoryInput');
+const addAccountSubCategoryinput = document.getElementById('addAccountSubCategoryInput');
+
 // 分页配置
 const ITEMS_PER_PAGE = 15; // 5x3
 let currentPage = 1;
@@ -22,6 +35,7 @@ async function myalert(message, type = 'info') {
     buttons: ['确定']
   });
 }
+let submitHandler = null; // 表单提交回调函数
 // 添加路由映射
 const routes = {
   '/': showLedgerList,
@@ -80,7 +94,7 @@ async function showLedgerDetail(ledgerId) {
 function generateMonthList(currentYear, currentMonth) {
   const monthList = [];
   for (let i = 0; i < 12; i++) {
-    const year = currentYear - Math.floor((currentMonth - i - 1) / 12);
+    const year = currentYear + Math.floor((currentMonth - i - 1) / 12);
     const month = (currentMonth - i - 1 + 12) % 12 + 1;
     monthList.push({ year, month });
   }
@@ -119,6 +133,85 @@ function showImportModal() {
   improtModal.style.display = 'block';
   importFileInput.value = '';
   importFileInput.focus();  
+}
+
+addAccountBtn.onclick = showaddAccountModal;
+
+async function  showaddAccountModal() {
+  addAccountModal.style.display = 'block';
+  
+    // 设置默认日期时间为当前时间
+    const now = new Date();
+    const formattedDate = now.toISOString().slice(0, 16);
+    addAccountDateinput.value = formattedDate;
+  
+  pre_ledgerid=getLedgerIdFromPath();
+   // 获取现有分类
+const categories = await window.electronAPI.getCategories(pre_ledgerid);
+// 清空现有选项
+  addAccountCategoryinput.innerHTML = '';
+  addAccountSubCategoryinput.innerHTML = '';
+
+
+// 清空现有选项
+const primaryCategoriesList = document.getElementById('primaryCategories');
+const subCategoriesList = document.getElementById('subCategories');
+primaryCategoriesList.innerHTML = '';
+subCategoriesList.innerHTML = '';
+
+// 动态填充一级分类
+categories.forEach(category => {
+  const option = document.createElement('option');
+  option.value = category.name;
+  primaryCategoriesList.appendChild(option);
+});
+
+// 监听一级分类输入框的变化，动态填充二级分类
+document.getElementById('addAccountCategoryInput').addEventListener('input', (event) => {
+  const selectedCategory = categories.find(cat => cat.name === event.target.value);
+  subCategoriesList.innerHTML = '';
+
+  if (selectedCategory) {
+    selectedCategory.sub_categories.forEach(subCategory => {
+      const option = document.createElement('option');
+      option.value = subCategory.name;
+      subCategoriesList.appendChild(option);
+    });
+  }
+});
+
+  
+if (submitHandler) {
+  document.getElementById('addAccountModalconfirmBtn').removeEventListener('click', submitHandler);
+}
+      submitHandler = async()  => {
+      const record = {
+        date: document.getElementById('addAccountDateInput').value,
+        note: document.getElementById('addAccountNoteInput').value,
+        amount: parseFloat(document.getElementById('addAccountMoneyInput').value),
+        type: document.getElementById('addAccountTypeInput').value,
+        transaction_time : document.getElementById('addAccountDateInput').value.replace('T', ' '),
+        category_name: document.getElementById('addAccountCategoryInput').value,
+        sub_category_name: document.getElementById('addAccountSubCategoryInput').value || null
+      };
+  
+      // 提交记录
+      try {
+        const result = await window.electronAPI.addRecord(pre_ledgerid, record);
+        if (result.success) {
+          await myalert('记录添加成功!', 'info');
+          addAccountModal.style.display = 'none';
+          // 刷新当前账本视图
+          const currentLedgerId = getLedgerIdFromPath();
+          showLedgerDetail(currentLedgerId);
+        } else {
+          await myalert(`添加失败: ${result.message}`, 'error');
+        }
+      } catch (err) {
+        await myalert('添加记录时发生错误', 'error');
+      }
+};
+document.getElementById('addAccountModalconfirmBtn').addEventListener('click', submitHandler);
 }
 
 // 新增获取账本ID的函数
@@ -224,6 +317,14 @@ ledgerModalcloseBtn.onclick = () => {
 importModalcloseBtn.onclick = () => {
   improtModal.style.display = 'none';
   importFileInput.value = '';
+};
+
+addAccountModalcloseBtn.onclick = () => {
+  addAccountModal.style.display = 'none';
+  if (submitHandler) {
+    document.getElementById('addAccountModalconfirmBtn').removeEventListener('click', submitHandler);
+    submitHandler = null;
+  }
 };
 
 // 获取账本列表并显示

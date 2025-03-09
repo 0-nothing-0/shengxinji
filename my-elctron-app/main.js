@@ -71,7 +71,7 @@ ipcMain.on('create-ledger', (event, ledgerName) => {
   });
 });
 ipcMain.handle('show-dialog', async (event, options) => {
-  console.log('showing dialog', options);
+  //console.log('showing dialog', options);
   return dialog.showMessageBox(win, options);
 });
 
@@ -102,7 +102,7 @@ const query_path = require('path');
 ipcMain.handle('get-accounts', async (event, ledgerId, year, month, category, note, amountRange, timeRange) => {
   return new Promise((resolve, reject) => {
     const args = [
-      query_path.join(__dirname, './python/query.py'),
+      './python/query.py',
       '--ledgerid', ledgerId.toString()
     ];
 
@@ -110,15 +110,21 @@ ipcMain.handle('get-accounts', async (event, ledgerId, year, month, category, no
     if (month) args.push('-m', month.toString());
     if (category) args.push('--category', category);
     if (note) args.push('--note', note);
-    if (amountRange) args.push('--amount', ...amountRange.map(String));
+    if (amountRange) args.push('--amount', amountRange.map(String).join(','));
     if (timeRange) args.push('--time', ...timeRange);
 
     const pythonProcess = spawn('python', args);
-
+    console.log('query args:', args);
     pythonProcess.stdout.on('data', (data) => {
-      const accounts = JSON.parse(data.toString());
-      resolve(accounts);
-      console.log('accounts:', accounts);
+      console.log("data:", data.toString());
+      try {
+        const accounts = JSON.parse(data.toString());
+        resolve(accounts);
+        console.log('accounts:', accounts);
+      } catch (err) {
+        console.error('Error parsing JSON:', err);
+        reject([]);
+      }
     });
 
     pythonProcess.stderr.on('data', (data) => {
@@ -165,3 +171,69 @@ ipcMain.handle('import-data', async (event, importPath,ledgerId) => {
   });
 });
 
+ipcMain.handle('get-categories', async (event, ledgerId) => {
+  return new Promise((resolve, reject) => {
+    const pythonProcess = spawn('python', [Path.join(__dirname, './python/cate_query.py'), ledgerId.toString()])
+
+    let data = '';
+    pythonProcess.stdout.on('data', (chunk) => {
+      data += chunk.toString();
+    });
+
+    pythonProcess.stderr.on('data', (error) => {
+      reject(error.toString());
+    });
+
+    pythonProcess.on('close', (code) => {
+      if (code !== 0) {
+        reject(`Python process exited with code ${code}`);
+      } else {
+        try {
+          const result = JSON.parse(data);
+          if (result.error) {
+            reject(result.error);
+          } else {
+            resolve(result);
+          }
+        } catch (e) {
+          reject('Failed to parse JSON');
+        }
+      }
+    });
+  });
+});
+
+ipcMain.handle('add-record', async (event, ledgerId, record) => {
+  console.log('add record:', record);
+  return new Promise((resolve, reject) => {
+    const pythonProcess = spawn('python', [
+      Path.join(__dirname, './python/insert.py'),
+      'add-entry',
+      ledgerId.toString(),
+      JSON.stringify(record) // 将记录对象序列化为字符串
+    ]);
+
+    let output = '';
+    pythonProcess.stdout.on('data', (data) => {
+      output += data.toString();
+    });
+
+    pythonProcess.stderr.on('data', (data) => {
+      console.error('Python Error:', data.toString());
+      reject({ success: false, message: data.toString() });
+    });
+
+    pythonProcess.on('close', (code) => {
+      if (code === 0) {
+        try {
+          const result = JSON.parse(output);
+          resolve(result);
+        } catch (e) {
+          resolve({ success: false, message: '解析响应失败' });
+        }
+      } else {
+        resolve({ success: false, message: `进程退出码: ${code}` });
+      }
+    });
+  });
+});
