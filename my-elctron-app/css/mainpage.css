@@ -119,3 +119,109 @@ body {
   #ledger-detail {
     display: none;
   }
+  /* 预设模态 */
+.preset-list {
+  display: grid;
+  gap: 10px;
+  margin: 15px 0;
+}
+
+.preset-item {
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.preset-item:hover {
+  background-color: #f5f5f5;
+}
+
+.record-form {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr auto;
+  gap: 10px;
+  margin: 10px 0;
+}
+
+.remove-record-btn {
+  background: none;
+  border: none;
+  font-size: 1.2em;
+  cursor: pointer;
+}
+#presetEditMode{
+  display: none;
+}
+.mode-switcher {
+  display: flex;
+  margin-bottom: 15px;
+  border-bottom: 1px solid #eee;
+}
+
+.mode-btn {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.mode-btn.active {
+  border-bottom: 2px solid #2196F3;
+  color: #2196F3;
+}
+
+.preset-select {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 15px;
+  border: 1px solid #ddd;
+}
+
+.preview-item {
+  display: grid;
+  grid-template-columns: 60px 80px 1fr;
+  gap: 10px;
+  padding: 8px;
+  border-bottom: 1px solid #eee;
+}
+
+#emptyPresetTip {
+  display: none;
+  padding: 20px;
+  text-align: center;
+  color: #999;
+}
+.mode-content {
+  display: none;
+}
+
+.mode-content.active {
+  display: block;
+}
+div.mode-content.active {
+  display: block !important; 
+}
+
+/* 预设记录表单 */
+.record-form {
+  display: grid;
+  grid-template-columns: 120px 1fr 100px 100px 150px 150px auto;
+  gap: 8px;
+  align-items: center;
+  padding: 8px;
+  border-bottom: 1px solid #eee;
+}
+
+/* 可编辑预览项 */
+.preview-item input {
+  padding: 4px;
+  border: 1px solid #ddd;
+  max-width: 120px;
+}
+
+.preview-item .preview-edit-amount {
+  width: 80px;
+}

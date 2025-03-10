@@ -75,30 +75,7 @@ ipcMain.handle('show-dialog', async (event, options) => {
   return dialog.showMessageBox(win, options);
 });
 
-// 处理获取账本列表的请求
-ipcMain.handle('get-ledgers', async () => {
-  return new Promise((resolve, reject) => {
-    const pythonProcess = spawn('python', [Path.join(__dirname, './python/get_ledger.py'), 'get-ledgers']);
-
-    pythonProcess.stdout.on('data', (data) => {
-      const ledgers = JSON.parse(data.toString());
-      resolve(ledgers);
-      console.log('ledgers:', ledgers);
-    });
-
-    pythonProcess.stderr.on('data', (data) => {
-      console.error('Python error:', data.toString());
-      reject([]);
-    });
-
-    pythonProcess.on('close', (code) => {
-      console.log(`Python closed, code: ${code}`);
-    });
-  });
-});
-const query_path = require('path');
-
-// 获取月流水
+// 获取流水
 ipcMain.handle('get-accounts', async (event, ledgerId, year, month, category, note, amountRange, timeRange) => {
   return new Promise((resolve, reject) => {
     const args = [
@@ -114,13 +91,13 @@ ipcMain.handle('get-accounts', async (event, ledgerId, year, month, category, no
     if (timeRange) args.push('--time', ...timeRange);
 
     const pythonProcess = spawn('python', args);
-    console.log('query args:', args);
+    //console.log('query args:', args);
     pythonProcess.stdout.on('data', (data) => {
-      console.log("data:", data.toString());
+      //console.log("data:", data.toString());
       try {
         const accounts = JSON.parse(data.toString());
         resolve(accounts);
-        console.log('accounts:', accounts);
+        //console.log('accounts:', accounts);
       } catch (err) {
         console.error('Error parsing JSON:', err);
         reject([]);
@@ -138,102 +115,151 @@ ipcMain.handle('get-accounts', async (event, ledgerId, year, month, category, no
   });
 });
 
-
-ipcMain.handle('import-data', async (event, importPath,ledgerId) => {
+// 获取账本列表
+ipcMain.handle('get-ledgers', async () => {
   return new Promise((resolve, reject) => {
-    const importProcess = spawn('python', ['./python/import.py', importPath,ledgerId.toString()],{encoding: 'gbk'});
-
-    let output = '';
-    let errorOutput = '';
-
-    importProcess.stdout.on('data', (data) => {
-      output += data.toString();
-      //console.log(output);
-    });
-
-    importProcess.stderr.on('data', (data) => {
-      errorOutput += data.toString();
-    });
-
-    importProcess.on('close', (code) => {
-      if (code === 0) {
-        try {
-          const result = JSON.parse(output.trim());
-          //console.log('import result:', result);
-          resolve(result);
-        } catch (error) {
-          reject({ success: false, message: '解析导入结果失败' });
-        }
-      } else {
-        reject({ success: false, message: errorOutput || '导入失败' });
-      }
-    });
+    const pythonProcess = spawn('python', [Path.join(__dirname, './python/get_ledger.py'), 'get-ledgers']);
+    handlePythonProcess(pythonProcess, resolve, reject);
   });
 });
 
-ipcMain.handle('get-categories', async (event, ledgerId) => {
+// 导入数据
+ipcMain.handle('import-data', async (_, importPath, ledgerId) => {
   return new Promise((resolve, reject) => {
-    const pythonProcess = spawn('python', [Path.join(__dirname, './python/cate_query.py'), ledgerId.toString()])
-
-    let data = '';
-    pythonProcess.stdout.on('data', (chunk) => {
-      data += chunk.toString();
-    });
-
-    pythonProcess.stderr.on('data', (error) => {
-      reject(error.toString());
-    });
-
-    pythonProcess.on('close', (code) => {
-      if (code !== 0) {
-        reject(`Python process exited with code ${code}`);
-      } else {
-        try {
-          const result = JSON.parse(data);
-          if (result.error) {
-            reject(result.error);
-          } else {
-            resolve(result);
-          }
-        } catch (e) {
-          reject('Failed to parse JSON');
-        }
-      }
-    });
+    const pythonProcess = spawn('python', [
+      './python/import.py',
+      importPath,
+      ledgerId.toString()
+    ], { encoding: 'gbk' });
+    
+    handlePythonProcess(pythonProcess, resolve, reject);
   });
 });
 
-ipcMain.handle('add-record', async (event, ledgerId, record) => {
-  console.log('add record:', record);
+// 获取分类
+ipcMain.handle('get-categories', async (_, ledgerId) => {
   return new Promise((resolve, reject) => {
+    const pythonProcess = spawn('python', [
+      Path.join(__dirname, './python/cate_query.py'),
+      ledgerId.toString()
+    ]);
+    
+    handlePythonProcess(pythonProcess, resolve, reject);
+  });
+});
+
+// 添加记录
+ipcMain.handle('add-record', async (_, ledgerId, record) => {
+  return new Promise((resolve, reject) => {
+    console.log('adding record', record);
     const pythonProcess = spawn('python', [
       Path.join(__dirname, './python/insert.py'),
       'add-entry',
       ledgerId.toString(),
-      JSON.stringify(record) // 将记录对象序列化为字符串
+      JSON.stringify(record)
     ]);
-
-    let output = '';
-    pythonProcess.stdout.on('data', (data) => {
-      output += data.toString();
-    });
-
-    pythonProcess.stderr.on('data', (data) => {
-      console.error('Python Error:', data.toString());
-      reject({ success: false, message: data.toString() });
-    });
-
-    pythonProcess.on('close', (code) => {
-      if (code === 0) {
-        try {
-          const result = JSON.parse(output);
-          resolve(result);
-        } catch (e) {
-          resolve({ success: false, message: '解析响应失败' });
-        }
-      } else {
-        resolve({ success: false, message: `进程退出码: ${code}` });
-      }
-    });
+    
+    handlePythonProcess(pythonProcess, resolve, reject);
   });
 });
+
+
+// 保存预设
+ipcMain.handle('save-preset', async (_, ledgerId, presetName, records) => {
+  console.log('saving preset', presetName, records);
+  console.log('args:',[
+      Path.join(__dirname, './python/preset.py'),
+      '--mode', 'save',
+      '--ledgerid', ledgerId.toString(),
+      '--name', presetName,
+      '--record', JSON.stringify(records)
+    ]);
+  return new Promise((resolve, reject) => {
+    const pythonProcess = spawn('python', [
+      Path.join(__dirname, './python/preset.py'),
+      '--mode', 'save',
+      '--ledgerid', ledgerId.toString(),
+      '--name', presetName,
+      '--record', JSON.stringify(records)
+    ]);
+    
+    handlePythonProcess(pythonProcess, resolve, reject);
+  });
+});
+
+// 获取预设
+ipcMain.handle('get-presets', async (_, ledgerId) => {
+  return new Promise((resolve, reject) => {
+    const pythonProcess = spawn('python', [
+      Path.join(__dirname, './python/preset.py'),
+    '--mode','list',
+    '--ledgerid',ledgerId.toString()
+    ]);
+
+    handlePythonProcess(pythonProcess, resolve, reject);
+  });
+});
+
+// 获取预设详情
+ipcMain.handle('get-preset-detail', async (_, ledgerId, presetId) => {
+  return new Promise((resolve, reject) => {
+    const pythonProcess = spawn('python', [
+      Path.join(__dirname, './python/preset.py'),
+      '--mode', 'detail',
+      '--ledgerid', ledgerId.toString(),
+      '--id', presetId
+    ]);
+    handlePythonProcess(pythonProcess, resolve, reject);
+  });
+});
+
+// 导入预设
+ipcMain.handle('import-preset', async (_, ledgerId, presetId) => {
+  return new Promise((resolve, reject) => {
+    const pythonProcess = spawn('python', [
+      Path.join(__dirname, './python/preset.py'),
+      '--mode', 'import',
+      '--ledgerid', ledgerId.toString(),
+      '--id', presetId
+    ]);
+    handlePythonProcess(pythonProcess, resolve, reject);
+  });
+});
+
+// ==================== 通用处理函数 ====================
+function handlePythonProcess(process, resolve, reject) {
+  let output = '';
+  let errorOutput = '';
+  
+  process.stdout.on('data', (data) => {
+    output += data.toString();
+    console.log('Python Output:', data.toString());
+  });
+
+  process.stderr.on('data', (data) => {
+    errorOutput += data.toString();
+    console.error('Python Error:', data.toString());
+  });
+
+  process.on('close', (code) => {
+    if (code !== 0) {
+      reject({ 
+        success: false, 
+        message: `进程异常退出 (code: ${code})`,
+        detail: errorOutput 
+      });
+      return;
+    }
+
+    try {
+      const result = JSON.parse(output);
+      resolve(result);
+    } catch (e) {
+      reject({
+        success: false,
+        message: '响应解析失败',
+        detail: `原始输出: ${output}`
+      });
+    }
+  });
+}

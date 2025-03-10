@@ -66,6 +66,13 @@ cursor.execute('''
     FOREIGN KEY (category_id) REFERENCES categories (id)
             )
     ''')
+cursor.execute('''
+    CREATE TABLE IF NOT EXISTS presets (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT UNIQUE NOT NULL,
+        records TEXT NOT NULL
+    )
+''')
 #设置默认配置
 default_data = {
         "食品酒水": ["早午晚餐", "饮料零食", "夜宵"],

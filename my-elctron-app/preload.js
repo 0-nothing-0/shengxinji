@@ -16,6 +16,10 @@ contextBridge.exposeInMainWorld('ledger_api', {
   getLedgerList: () => ipcRenderer.invoke('get-ledgers')
 });
 contextBridge.exposeInMainWorld('electronAPI', {
+  getPresetDetail: (ledgerId,presetId) => ipcRenderer.invoke('get-preset-detail', ledgerId,presetId),
+  importPreset: (ledgerId, presetId) => ipcRenderer.invoke('import-preset', ledgerId, presetId),
+  savePreset: (ledgerId, presetName, records) => ipcRenderer.invoke('save-preset', ledgerId, presetName, records),
+  getPresets: (ledgerId) => ipcRenderer.invoke('get-presets', ledgerId),
   addRecord: (ledgerId, record) => ipcRenderer.invoke('add-record', ledgerId, record),
   getCategories: (ledgerid) => ipcRenderer.invoke('get-categories', ledgerid),
   myalert: (options) => ipcRenderer.invoke('show-dialog', options), // 暴露 myalert 方法
