@@ -39,6 +39,7 @@
     <button id="importBtn" >导入</button>
     <button id="addAccountBtn" >新建记录</button>
     <button id="addfromDefaultBtn" >从预设添加</button>
+    <button id="filterBtn">筛选</button>
     <div id="importModal" class="modal">
       <div class="modal-content">
         <span class="close" id="importModalCloseBtn">&times;</span>
@@ -100,6 +101,7 @@
         <div class="mode-switcher">
           <button class="mode-btn active" data-mode="select">选择预设</button>
           <button class="mode-btn" data-mode="create">新建预设</button>
+          <button class="mode-btn" data-mode="delete">删除预设</button>
         </div>
 
         <!-- 选择预设模式 -->
@@ -119,8 +121,62 @@
           <div class="record-container" id="recordContainer"></div>
           <button id="submitPresetBtn" class="cfmBtn">保存预设</button>
         </div>
+        <!-- 添加删除模式内容 -->
+        <div id="presetDeleteMode" class="mode-content">
+          <div id="presetDeleteList" class="delete-list"></div>
+          <button id="deletePresetBtn" class="cfmBtn danger">删除选中预设</button>
+        </div>
       </div>
     </div>
+        <!-- 筛选模态框 -->
+      <!-- 修改后的筛选模态框 -->
+<div id="filterModal" class="modal">
+  <div class="modal-content">
+    <span class="close" id="filterModalCloseBtn">&times;</span>
+    <h3>筛选条件</h3>
+    <div class="filter-content">
+      <div class="filter-row">
+        <label for="filterStartDate">起始日期:</label>
+        <input type="date" id="filterStartDate" />
+      </div>
+      <div class="filter-row">
+        <label for="filterEndDate">截止日期:</label>
+        <input type="date" id="filterEndDate" />
+      </div>
+      <div class="filter-row">
+        <label for="filterAmountLeast">金额最小值:</label>
+        <input type="number" id="filterAmountLeast" />
+      </div>
+      <div class="filter-row">
+        <label for="filterAmountMost">金额最大值:</label>
+        <input type="number" id="filterAmountMost" />
+      </div>
+      <div class="filter-row">
+        <label for="filterCategory">一级分类:</label>
+        <input type="text" id="filterCategory" list="filterPrimaryCategories" />
+        <datalist id="filterPrimaryCategories"></datalist>
+      </div>
+      <div class="filter-row">
+        <label for="filterSubCategory">二级分类:</label>
+        <input type="text" id="filterSubCategory" list="filterSubCategories" />
+        <datalist id="filterSubCategories"></datalist>
+      </div>
+      <div class="filter-row">
+        <label for="filterNote">关键字:</label>
+        <input type="text" id="filterNote" />
+      </div>
+      <div class="filter-row">
+        <label for="filterType">收支类型:</label>
+        <select id="filterType">
+          <option value="all">全部</option>
+          <option value="支出">支出</option>
+          <option value="收入">收入</option>
+        </select>
+      </div>
+    </div>
+    <button id="filterModalconfirmBtn" class="cfmBtn">提交筛选</button>
+  </div>
+</div>
   </div>
   </body>
   <script src="./renderer.js"></script>

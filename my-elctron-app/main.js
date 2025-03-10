@@ -76,44 +76,46 @@ ipcMain.handle('show-dialog', async (event, options) => {
 });
 
 // 获取流水
-ipcMain.handle('get-accounts', async (event, ledgerId, year, month, category, note, amountRange, timeRange) => {
+ipcMain.handle('get-accounts', async (event, ledgerId, year, month, category, subCategory, note, amountLeast, amountMost, timeStart, timeEnd, type) => {
   return new Promise((resolve, reject) => {
     const args = [
       './python/query.py',
       '--ledgerid', ledgerId.toString()
     ];
-
-    if (year) args.push('-y', year.toString());
-    if (month) args.push('-m', month.toString());
+    if (timeStart || timeEnd) {
+      args.push('--time', 
+        timeStart || '1970-01-01',
+        timeEnd || '2100-12-31'
+      );
+    } else {
+      if (year) args.push('-y', year.toString());
+      if (month) args.push('-m', month.toString());
+    }
     if (category) args.push('--category', category);
+    if (subCategory) args.push('--subcategory', subCategory);
     if (note) args.push('--note', note);
-    if (amountRange) args.push('--amount', amountRange.map(String).join(','));
-    if (timeRange) args.push('--time', ...timeRange);
-
+    if (amountLeast !== null || amountMost !== null) {
+      args.push('--amount', `${amountLeast || ''},${amountMost || ''}`);
+    }
+    if (type) args.push('--type', type);
     const pythonProcess = spawn('python', args);
-    //console.log('query args:', args);
-    pythonProcess.stdout.on('data', (data) => {
-      //console.log("data:", data.toString());
-      try {
-        const accounts = JSON.parse(data.toString());
-        resolve(accounts);
-        //console.log('accounts:', accounts);
-      } catch (err) {
-        console.error('Error parsing JSON:', err);
-        reject([]);
-      }
-    });
+    console.log('query args:', args);
 
-    pythonProcess.stderr.on('data', (data) => {
-      console.error('Python error:', data.toString());
-      reject([]);
-    });
-
-    pythonProcess.on('close', (code) => {
-      console.log(`Python closed, code: ${code}`);
+    handlePythonProcess(pythonProcess, (parsedOutput) => {
+      resolve({ 
+        success: true, 
+        data: parsedOutput 
+      });
+    }, (error) => {
+      resolve({ 
+        success: false, 
+        message: error.message,
+        detail: error.detail || error.toString()
+      });
     });
   });
 });
+
 
 // 获取账本列表
 ipcMain.handle('get-ledgers', async () => {
@@ -195,11 +197,24 @@ ipcMain.handle('get-presets', async (_, ledgerId) => {
     '--mode','list',
     '--ledgerid',ledgerId.toString()
     ]);
-
+    console.log('get-presets');
     handlePythonProcess(pythonProcess, resolve, reject);
   });
 });
 
+// 删除预设
+ipcMain.handle('delete-presets', async (_, ledgerId, presetIds) => {
+  return new Promise((resolve, reject) => {
+    const pythonProcess = spawn('python', [
+      Path.join(__dirname, './python/preset.py'),
+      '--mode', 'remove',
+      '--ledgerid', ledgerId.toString(),
+      '--ids', JSON.stringify(presetIds)
+    ]);
+
+    handlePythonProcess(pythonProcess, resolve, reject);
+  });
+});
 // 获取预设详情
 ipcMain.handle('get-preset-detail', async (_, ledgerId, presetId) => {
   return new Promise((resolve, reject) => {

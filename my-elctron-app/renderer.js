@@ -43,6 +43,12 @@ const emptyPresetTip = document.getElementById('emptyPresetTip');
 let currentRecords = []; // 当前编辑的记录集合
 let presetSubmitHandler = null;
 
+// 新增筛选按钮和模态框的变量
+const filterBtn = document.getElementById('filterBtn');
+const filterModal = document.getElementById('filterModal');
+const filterModalCloseBtn = document.getElementById('filterModalCloseBtn');
+const filterModalconfirmBtn = document.getElementById('filterModalconfirmBtn');
+
 // 分页配置
 const ITEMS_PER_PAGE = 15; // 5x3
 let currentPage = 1;
@@ -79,38 +85,38 @@ function handleRouting() {
   }
 }
 
-async function showLedgerDetail(ledgerId) {
-  document.getElementById('ledger-list').style.display = 'none';
-  console.log('hidden');
-  document.getElementById('ledger-detail').style.display = 'block';
-  history.pushState({}, '', `/ledger/${ledgerId}`);
+// async function showLedgerDetail(ledgerId) {
+//   document.getElementById('ledger-list').style.display = 'none';
+//   console.log('hidden');
+//   document.getElementById('ledger-detail').style.display = 'block';
+//   history.pushState({}, '', `/ledger/${ledgerId}`);
 
-  // 获取当前年月
-  const currentDate = new Date();
-  const currentYear = currentDate.getFullYear();
-  const currentMonth = currentDate.getMonth() + 1; // 月份从0开始，所以需要加1
-  console.log('currentYear: '+ currentYear + ', currentMonth: '+ currentMonth);
-  // 默认显示当前年月的流水
-  const accounts = await window.electronAPI.getAccounts(ledgerId, currentYear, currentMonth);
-  console.log('showLedgerDetail accounts: '+ accounts);
-  displayAccounts(accounts);
+//   // 获取当前年月
+//   const currentDate = new Date();
+//   const currentYear = currentDate.getFullYear();
+//   const currentMonth = currentDate.getMonth() + 1; // 月份从0开始，所以需要加1
+//   console.log('currentYear: '+ currentYear + ', currentMonth: '+ currentMonth);
+//   // 默认显示当前年月的流水
+//   const accounts = await window.electronAPI.getAccounts(ledgerId, currentYear, currentMonth);
+//   console.log('showLedgerDetail accounts: '+ accounts);
+//   displayAccounts(accounts);
 
-  // 生成月份列表并显示在左侧
-  const monthList = generateMonthList(currentYear, currentMonth);
-  displayMonthList(monthList);
+//   // 生成月份列表并显示在左侧
+//   const monthList = generateMonthList(currentYear, currentMonth);
+//   displayMonthList(monthList);
 
-  // 监听月份列表的点击事件
-  document.getElementById('month-list').addEventListener('click', async (event) => {
-    if (event.target.tagName === 'LI') {
-      const selectedYear = event.target.dataset.year;
-      const selectedMonth = event.target.dataset.month;
+//   // 监听月份列表的点击事件
+//   document.getElementById('month-list').addEventListener('click', async (event) => {
+//     if (event.target.tagName === 'LI') {
+//       const selectedYear = event.target.dataset.year;
+//       const selectedMonth = event.target.dataset.month;
 
-      // 获取选中月份的流水
-      const selectedAccounts = await window.electronAPI.getAccounts(ledgerId, selectedYear, selectedMonth);
-      displayAccounts(selectedAccounts);
-    }
-  });
-}
+//       // 获取选中月份的流水
+//       const selectedAccounts = await window.electronAPI.getAccounts(ledgerId, selectedYear, selectedMonth);
+//       displayAccounts(selectedAccounts);
+//     }
+//   });
+// }
 
 // 生成月份列表
 function generateMonthList(currentYear, currentMonth) {
@@ -132,16 +138,16 @@ function displayMonthList(monthList) {
   
 }
 
-// 显示流水
-function displayAccounts(accounts) {
-  const accountsElement = document.getElementById('accounts');
-  accountsElement.innerHTML = accounts
-    .map(entry => {
-      const date = new Date(entry.date);
-      return `<div>Date: ${date.toLocaleDateString()}, Amount: ${entry.amount}, Note: ${entry.note}</div>`;
-    })
-    .join('');
-}
+// // 显示流水
+// function displayAccounts(accounts) {
+//   const accountsElement = document.getElementById('accounts');
+//   accountsElement.innerHTML = accounts
+//     .map(entry => {
+//       const date = new Date(entry.date);
+//       return `<div>Date: ${date.toLocaleDateString()}, Amount: ${entry.amount}, Note: ${entry.note}</div>`;
+//     })
+//     .join('');
+// }
 
 function showLedgerModal() {
   ledgerModal.style.display = 'block';
@@ -410,6 +416,7 @@ function updatePagination(currentPage) {
 async function showPresetModal() {
   presetModal.style.display = 'block';
   loadPresets();
+  loadPresetsForDelete();
   
   // 动态加载分类
   const ledgerId = getLedgerIdFromPath();
@@ -482,11 +489,64 @@ modeSwitcher.addEventListener('click', (e) => {
   // 修正ID匹配逻辑
   const mode = btn.dataset.mode;
   document.querySelectorAll('.mode-content').forEach(el => {
-    const targetMode = mode === 'create' ? 'Edit' : 'Select'; // 关键修正点
+    const targetMode = 
+    mode === 'create' ? 'Edit' : 
+    mode === 'delete' ? 'Delete' : 
+    'Select';
     el.classList.toggle('active', el.id === `preset${targetMode}Mode`);
   });
 });
 
+// 新增删除预设相关函数
+async function loadPresetsForDelete() {
+  try {
+    const result = await window.electronAPI.getPresets(getLedgerIdFromPath());
+    const container = document.getElementById('presetDeleteList');
+    container.innerHTML = '';
+    console.log('loadPresetsForDelete result: '+ result);
+    if (result.success && result.data?.length > 0) {
+      result.data.forEach(preset => {
+        const item = document.createElement('div');
+        item.className = 'delete-item';
+        item.innerHTML = `
+          <input type="checkbox" id="preset_${preset.id}" value="${preset.id}">
+          <label for="preset_${preset.id}">${preset.name}</label>
+        `;
+        container.appendChild(item);
+      });
+    } else {
+      container.innerHTML = '<div class="empty-tip">暂无预设可删除</div>';
+    }
+  } catch (err) {
+    myalert('加载预设失败: ' + err.message, 'error');
+  }
+}
+document.getElementById('deletePresetBtn').addEventListener('click', async () => {
+  const checkboxes = document.querySelectorAll('#presetDeleteList input[type="checkbox"]:checked');
+  const presetIds = Array.from(checkboxes).map(cb => cb.value);
+  
+  if (presetIds.length === 0) {
+    await myalert('请选择要删除的预设', 'warning');
+    return;
+  }
+
+  try {
+    const result = await window.electronAPI.deletePresets(
+      getLedgerIdFromPath(),
+      presetIds
+    );
+    
+    if (result.success) {
+      await myalert(`成功删除 ${presetIds.length} 个预设`, 'info');
+      loadPresets(); // 刷新预设列表
+      loadPresetsForDelete(); // 刷新删除列表
+    } else {
+      await myalert(result.message || '删除失败', 'error');
+    }
+  } catch (err) {
+    await myalert('删除过程中发生错误: ' + err.message, 'error');
+  }
+});
 // 添加新记录
 addRecordBtn.onclick = () => {
   recordContainer.insertAdjacentHTML('beforeend', createRecordForm());
@@ -627,7 +687,156 @@ presetModalCloseBtn.onclick = () => {
   recordContainer.innerHTML = '';
 };
 
+// 显示筛选模态框
+filterBtn.onclick = showFilterModal;
 
+async function showFilterModal() {
+  filterModal.style.display = 'block';
+  
+  // 清空输入
+  document.getElementById('filterStartDate').value = '';
+  document.getElementById('filterEndDate').value = '';
+  document.getElementById('filterAmountLeast').value = '';
+  document.getElementById('filterAmountMost').value = '';
+  document.getElementById('filterCategory').value = '';
+  document.getElementById('filterSubCategory').value = '';
+  document.getElementById('filterNote').value = '';
+  //document.getElementById('filterType').value = 'all';
+
+  // 动态加载分类
+  const ledgerId = getLedgerIdFromPath();
+  const categories = await window.electronAPI.getCategories(ledgerId);
+  
+  // 填充一级分类
+  const primaryList = document.getElementById('filterPrimaryCategories');
+  primaryList.innerHTML = categories.map(c => `<option value="${c.name}">`).join('');
+
+  // 监听一级分类变化
+  document.getElementById('filterCategory').addEventListener('input', (event) => {
+    const selectedCategory = categories.find(cat => cat.name === event.target.value);
+    const subList = document.getElementById('filterSubCategories');
+    subList.innerHTML = '';
+    
+    if (selectedCategory) {
+      subList.innerHTML = selectedCategory.sub_categories
+        .map(sub => `<option value="${sub.name}">`)
+        .join('');
+    }
+  });
+}
+
+// 关闭筛选模态框
+filterModalCloseBtn.onclick = () => {
+  filterModal.style.display = 'none';
+};
+
+filterModalconfirmBtn.onclick = async () => {
+  const filterParams = {
+    startDate: document.getElementById('filterStartDate').value || null,
+    endDate: document.getElementById('filterEndDate').value || null,
+    amountMin: parseFloat(document.getElementById('filterAmountLeast').value) || null,
+    amountMax: parseFloat(document.getElementById('filterAmountMost').value) || null,
+    category: document.getElementById('filterCategory').value || null,
+    subCategory: document.getElementById('filterSubCategory').value || null,
+    note: document.getElementById('filterNote').value || null,
+    type: document.getElementById('filterType').value === 'all' ? null : document.getElementById('filterType').value
+  };
+
+  try {
+    const result = await window.electronAPI.getAccounts(
+      getLedgerIdFromPath(),
+      null, // year - 改用日期范围查询
+      null, // month - 改用日期范围查询
+      filterParams.category,
+      filterParams.subCategory,  // 新增二级分类参数
+      filterParams.note,
+      filterParams.amountMin,
+      filterParams.amountMax,
+      filterParams.startDate,    // 直接传递日期字符串
+      filterParams.endDate,      // 直接传递日期字符串
+      filterParams.type
+    );
+
+    if (result.success) {
+      displayAccounts(result.data, 'accounts', true); // 添加第三个参数表示是筛选结果
+      filterModal.style.display = 'none';
+      //document.getElementById('month-list').style.display = 'none';
+    } else {
+      await myalert(result.message || '筛选失败', 'error');
+    }
+  } catch (error) {
+    console.error('筛选错误:', error);
+    await myalert(`筛选失败: ${error.message || '未知错误'}`, 'error');
+  }
+};
+
+
+
+// 修改displayAccounts方法
+function displayAccounts(accounts, containerId = 'accounts', isFilterResult = false) {
+  const accountsElement = document.getElementById(containerId);
+  let html = '';
+  
+  if (isFilterResult) {
+    html += `<div class="filter-result-title">筛选结果（共 ${accounts.length} 条）</div>`;
+  }
+  
+  html += accounts
+    .map(entry => {
+      const date = new Date(entry.date);
+      return `<div>Date: ${date.toLocaleDateString()}, Amount: ${entry.amount}, Note: ${entry.note}</div>`;
+    })
+    .join('');
+  
+  accountsElement.innerHTML = html;
+}
+
+// 修改 showLedgerDetail 方法以显示月份列表
+function showLedgerDetail(ledgerId) {
+  document.getElementById('ledger-list').style.display = 'none';
+  console.log('hidden');
+  document.getElementById('ledger-detail').style.display = 'block';
+  history.pushState({}, '', `/ledger/${ledgerId}`);
+  document.getElementById('month-list').style.display = 'block';
+  // 获取当前年月
+  const currentDate = new Date();
+  const currentYear = currentDate.getFullYear();
+  const currentMonth = currentDate.getMonth() + 1; // 月份从0开始，所以需要加1
+  console.log('currentYear: ' + currentYear + ', currentMonth: ' + currentMonth);
+
+  // 默认显示当前年月的流水
+  getAccountsForMonth(ledgerId, currentYear, currentMonth);
+  
+  // 生成月份列表并显示在左侧
+  const monthList = generateMonthList(currentYear, currentMonth);
+  displayMonthList(monthList);
+
+  // 监听月份列表的点击事件
+  document.getElementById('month-list').addEventListener('click', async (event) => {
+    if (event.target.tagName === 'LI') {
+      const selectedYear = event.target.dataset.year;
+      const selectedMonth = event.target.dataset.month;
+
+      // 获取选中月份的流水
+      getAccountsForMonth(ledgerId, selectedYear, selectedMonth);
+    }
+  });
+}
+
+// 修改getAccountsForMonth方法
+async function getAccountsForMonth(ledgerId, year, month) {
+  try {
+    const result = await window.electronAPI.getAccounts(ledgerId, year, month);
+    if (result.success) {
+      displayAccounts(result.data, 'accounts');
+    } else {
+      await myalert(result.message || '获取月份记录失败', 'error');
+    }
+  } catch (error) {
+    console.error('获取月份记录时发生错误:', error);
+    await myalert('获取月份记录时发生错误', 'error');
+  }
+}
 
 // 页面加载时初始化
 window.onload = () => {

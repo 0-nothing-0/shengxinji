@@ -97,6 +97,27 @@ def handle_import(ledger_id, preset_id):
             except:
                 continue
         return {'success': True, 'imported': imported}
+def handle_remove(ledger_id, preset_ids):
+    """删除多个预设"""
+    ledger_name = get_ledger_name(ledger_id)
+    if not ledger_name:
+        return {'success': False, 'message': '账本不存在'}
+    
+    db_path = Path(__file__).parent.parent / 'db' / f'{ledger_name}.db'
+    try:
+        with sqlite3.connect(db_path) as conn:
+            # 使用参数化查询防止SQL注入
+            placeholders = ','.join(['?']*len(preset_ids))
+            conn.execute(
+                f'DELETE FROM presets WHERE id IN ({placeholders})',
+                preset_ids
+            )
+            return {'success': True}
+    except sqlite3.Error as e:
+        return {'success': False, 'message': f'数据库错误: {str(e)}'}
+    except Exception as e:
+        return {'success': False, 'message': str(e)}
+    
 def main():
     parser = argparse.ArgumentParser(description='处理预设命令')
     parser.add_argument('--mode', type=str, required=True, help='操作模式（save/list）')
@@ -104,6 +125,7 @@ def main():
     parser.add_argument('--name', type=str, help='预设名称')
     parser.add_argument('--record', type=str, help='记录数据（JSON格式）')
     parser.add_argument('--id', type=int, help='预设ID')
+    parser.add_argument('--ids', type=str, help='要删除的预设ID列表(JSON数组)')
     args = parser.parse_args()
 
     if args.mode == 'save':
@@ -120,6 +142,18 @@ def main():
         print(json.dumps(result))
     elif args.mode == 'import':
         result = handle_import(args.ledgerid, args.id)
+        print(json.dumps(result))
+    elif args.mode == 'remove':
+        if not args.ids:
+            print(json.dumps({'success': False, 'message': '缺少预设ID列表'}))
+            return
+        try:
+            preset_ids = json.loads(args.ids)
+            # 转换ID为整数并过滤无效值
+            preset_ids = [str(int(id)) for id in preset_ids if id.isdigit()]
+            result = handle_remove(args.ledgerid, preset_ids)
+        except json.JSONDecodeError:
+            result = {'success': False, 'message': 'ID列表格式错误'}
         print(json.dumps(result))
     else:
         print(json.dumps({'success': False, 'message': '无效命令'}))
