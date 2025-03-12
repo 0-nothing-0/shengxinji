@@ -29,7 +29,7 @@ def query_entries(ledger_id, year=None, month=None, category=None, subcategory=N
     query = 'SELECT * FROM entries WHERE 1=1'
     params = []
 
-    # 时间范围查询（当存在时间范围时忽略年月）
+    # 时间范围查询（优先使用精确日期范围）
     if time_start or time_end:
         if time_start:
             query += ' AND date >= ?'
@@ -38,30 +38,32 @@ def query_entries(ledger_id, year=None, month=None, category=None, subcategory=N
             query += ' AND date <= ?'
             params.append(time_end)
     else:
-        # 保留原有年月查询
+        # 年月查询
         if year:
             query += ' AND strftime("%Y", date) = ?'
-            params.append(str(year))
+            params.append(f"{year:04d}")
         if month:
             query += ' AND strftime("%m", date) = ?'
-            params.append(str(month).zfill(2))
+            params.append(f"{month:02d}")
 
-    # 其他筛选条件保持不变...
+    # 分类条件更新为新的字段名
     if category:
-        query += ' AND category = ?'
+        query += ' AND category_name = ?'  # 修改点1：category -> category_name
         params.append(category)
     if subcategory:
-        query += ' AND sub_category = ?'
+        query += ' AND sub_category_name = ?'  # 修改点2：subcategory -> sub_category_name
         params.append(subcategory)
+
+    # 其他条件保持不变但字段验证
     if note:
         query += ' AND note LIKE ?'
         params.append(f'%{note}%')
     if amount_min is not None:
         query += ' AND amount >= ?'
-        params.append(amount_min)
+        params.append(float(amount_min))
     if amount_max is not None:
         query += ' AND amount <= ?'
-        params.append(amount_max)
+        params.append(float(amount_max))
     if type:
         query += ' AND type = ?'
         params.append(type)
@@ -78,6 +80,41 @@ def query_entries(ledger_id, year=None, month=None, category=None, subcategory=N
 
     return result
 
+def find_record(ledger_id, transaction_id):
+    # 连接主数据库，查询账本名称
+    conn = sqlite3.connect(ledger_db_path)
+    cursor = conn.cursor()
+    cursor.execute('SELECT name FROM ledgers WHERE id = ?', (ledger_id,))
+    ledger = cursor.fetchone()
+    conn.close()
+
+    if not ledger:
+        raise ValueError('账本不存在')
+
+    # 连接账本数据库，查询流水数据
+    ledger_name = ledger[0]
+    detail_db_path = os.path.join(current_dir, '..', 'db', f'{ledger_name}.db')
+    conn = sqlite3.connect(detail_db_path)
+    cursor = conn.cursor()
+
+    # 构建查询条件
+    query = 'SELECT * FROM entries WHERE id = ?'
+    params = [transaction_id]
+
+    # 执行查询
+    cursor.execute(query, params)
+    entry = cursor.fetchone()
+    conn.close()
+
+    if not entry:
+        raise ValueError('交易记录不存在')
+
+    # 将结果转换为字典
+    columns = [description[0] for description in cursor.description]
+    result = dict(zip(columns, entry))
+
+    return result
+
 def main():
     parser = argparse.ArgumentParser(description='查询账本流水')
     parser.add_argument('--ledgerid', required=True, help='账本ID')
@@ -90,8 +127,15 @@ def main():
     parser.add_argument('--type', choices=['支出', '收入'], help='收支类型')
     # 修改time参数解析
     parser.add_argument('--time', nargs=2, metavar=('start', 'end'), help='时间范围')
+    parser.add_argument('--transactionId',type=int, help='交易ID')
     args = parser.parse_args()
-
+    if args.transactionId:
+        try:
+            entry=find_record(args.ledgerid, args.transactionId)
+            print(json.dumps(entry))
+        except Exception as e:
+            print(json.dumps({'error': str(e)}))
+        return
     # 解析金额范围
     amount_min, amount_max = args.amount if args.amount else (None, None)
     # 解析时间范围
@@ -108,8 +152,7 @@ def main():
         subcategory=args.subcategory,
         note=args.note,
         amount_min=amount_min,
-        amount_max=amount_max,
-        type=args.type
+        type=args.type,
             )
         print(json.dumps(entries))
     except Exception as e:

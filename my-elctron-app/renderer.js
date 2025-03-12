@@ -49,6 +49,19 @@ const filterModal = document.getElementById('filterModal');
 const filterModalCloseBtn = document.getElementById('filterModalCloseBtn');
 const filterModalconfirmBtn = document.getElementById('filterModalconfirmBtn');
 
+//批量操作相关变量
+
+const batchActionBar = document.createElement('div');
+batchActionBar.id = 'batchActionBar';
+batchActionBar.innerHTML = `
+  <button id="batchDeleteBtn">删除</button>
+  <button id="batchEditBtn">修改</button>
+`;
+batchActionBar.style.display = 'none';
+document.querySelector('#ledger-detail').appendChild(batchActionBar);
+
+
+
 // 分页配置
 const ITEMS_PER_PAGE = 15; // 5x3
 let currentPage = 1;
@@ -84,72 +97,82 @@ function handleRouting() {
     showLedgerList();
   }
 }
-
-// async function showLedgerDetail(ledgerId) {
-//   document.getElementById('ledger-list').style.display = 'none';
-//   console.log('hidden');
-//   document.getElementById('ledger-detail').style.display = 'block';
-//   history.pushState({}, '', `/ledger/${ledgerId}`);
-
-//   // 获取当前年月
-//   const currentDate = new Date();
-//   const currentYear = currentDate.getFullYear();
-//   const currentMonth = currentDate.getMonth() + 1; // 月份从0开始，所以需要加1
-//   console.log('currentYear: '+ currentYear + ', currentMonth: '+ currentMonth);
-//   // 默认显示当前年月的流水
-//   const accounts = await window.electronAPI.getAccounts(ledgerId, currentYear, currentMonth);
-//   console.log('showLedgerDetail accounts: '+ accounts);
-//   displayAccounts(accounts);
-
-//   // 生成月份列表并显示在左侧
-//   const monthList = generateMonthList(currentYear, currentMonth);
-//   displayMonthList(monthList);
-
-//   // 监听月份列表的点击事件
-//   document.getElementById('month-list').addEventListener('click', async (event) => {
-//     if (event.target.tagName === 'LI') {
-//       const selectedYear = event.target.dataset.year;
-//       const selectedMonth = event.target.dataset.month;
-
-//       // 获取选中月份的流水
-//       const selectedAccounts = await window.electronAPI.getAccounts(ledgerId, selectedYear, selectedMonth);
-//       displayAccounts(selectedAccounts);
-//     }
-//   });
-// }
-
-// 生成月份列表
-function generateMonthList(currentYear, currentMonth) {
-  const monthList = [];
-  for (let i = 0; i < 12; i++) {
-    const year = currentYear + Math.floor((currentMonth - i - 1) / 12);
-    const month = (currentMonth - i - 1 + 12) % 12 + 1;
-    monthList.push({ year, month });
-  }
-  return monthList;
+// 清空模态框函数
+function clearModalInputs(modal) {
+  modal.querySelectorAll('input, select').forEach(element => {
+    if(element.type !== 'button') element.value = '';
+  });
 }
+
+// // 生成月份列表
+// function generateMonthList(currentYear, currentMonth) {
+//   const monthList = [];
+//   for (let i = 0; i < 12; i++) {
+//     const year = currentYear + Math.floor((currentMonth - i - 1) / 12);
+//     const month = (currentMonth - i - 1 + 12) % 12 + 1;
+//     monthList.push({ year, month });
+//   }
+//   return monthList;
+// }
 
 // 显示月份列表
-function displayMonthList(monthList) {
+async function displayMonthList(ledgerId) {
   const monthListElement = document.getElementById('month-list');
-  monthListElement.innerHTML = monthList
-    .map(({ year, month }) => `<li data-year="${year}" data-month="${month}">${year}年${month}月</li>`)
-    .join('');
   
+  try {
+    // 获取有记录的月份数据 {2023:[7,8], 2022:[12]}
+    const { data: yearMonths } = await window.electronAPI.getMonthsWithRecords(ledgerId);
+    
+    let html = '';
+    for (const [year, months] of Object.entries(yearMonths)) {
+      html += `
+        <div class="year-group">
+          <div class="year-header" data-year="${year}">
+            <span>${year}年</span>
+            <span class="toggle-icon">▼</span>
+          </div>
+          <div class="month-list" data-year="${year}" style="display:none">
+            ${months.map(month => `
+              <div class="month-item" data-year="${year}" data-month="${month}">
+                ${month}月
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+    
+    monthListElement.innerHTML = html;
+    
+    // 添加年份展开/收起事件
+    monthListElement.querySelectorAll('.year-header').forEach(header => {
+      header.addEventListener('click', function() {
+        const year = this.dataset.year;
+        const monthList = this.nextElementSibling;
+        const isCollapsed = monthList.style.display === 'none';
+        
+        monthList.style.display = isCollapsed ? 'block' : 'none';
+        this.querySelector('.toggle-icon').textContent = isCollapsed ? '▼' : '▶';
+      });
+    });
+
+    // 添加月份点击事件
+    monthListElement.addEventListener('click', (e) => {
+      const monthItem = e.target.closest('.month-item');
+      if (monthItem) {
+        const year = monthItem.dataset.year;
+        const month = monthItem.dataset.month;
+        getAccountsForMonth(ledgerId, year, month);
+      }
+    });
+
+  } catch (error) {
+    console.error('获取月份数据失败:', error);
+  }
 }
 
-// // 显示流水
-// function displayAccounts(accounts) {
-//   const accountsElement = document.getElementById('accounts');
-//   accountsElement.innerHTML = accounts
-//     .map(entry => {
-//       const date = new Date(entry.date);
-//       return `<div>Date: ${date.toLocaleDateString()}, Amount: ${entry.amount}, Note: ${entry.note}</div>`;
-//     })
-//     .join('');
-// }
-
 function showLedgerModal() {
+  clearModalInputs(ledgerModal)
   ledgerModal.style.display = 'block';
   ledgerNameInput.value = '';
   ledgerNameInput.focus();
@@ -158,16 +181,21 @@ function showLedgerModal() {
 importBtn.onclick = showImportModal;
 
 function showImportModal() {
+  clearModalInputs(improtModal)
   improtModal.style.display = 'block';
   importFileInput.value = '';
   importFileInput.focus();  
 }
 
-addAccountBtn.onclick = showaddAccountModal;
+addAccountBtn.onclick = function () {
+  showaddAccountModal(false); 
+};
 
-async function  showaddAccountModal() {
+async function showaddAccountModal(isEdit = false, recordIds = []) {
+  clearModalInputs(addAccountModal);
   addAccountModal.style.display = 'block';
-  
+  console.log('showaddAccountModal is running,isEdit: ', isEdit);
+  console.log(window.location.pathname);
     // 设置默认日期时间为当前时间
     const now = new Date();
     const formattedDate = now.toISOString().slice(0, 16);
@@ -175,6 +203,7 @@ async function  showaddAccountModal() {
   
   pre_ledgerid=getLedgerIdFromPath();
    // 获取现有分类
+   console.log('pre_ledgerid: ', pre_ledgerid);
 const categories = await window.electronAPI.getCategories(pre_ledgerid);
 // 清空现有选项
   addAccountCategoryinput.innerHTML = '';
@@ -208,43 +237,106 @@ document.getElementById('addAccountCategoryInput').addEventListener('input', (ev
   }
 });
 
-  
-if (submitHandler) {
-  document.getElementById('addAccountModalconfirmBtn').removeEventListener('click', submitHandler);
-}
-      submitHandler = async()  => {
-      const record = {
+// 如果是编辑模式
+if (isEdit) {
+  try {
+    document.getElementById('addAccountModalconfirmBtn').innerText = '确认修改';
+    document.getElementById('addAccountModalTitle').innerText = '修改记录';
+    // 获取选中记录的详细信息
+    const result = await window.electronAPI.getAccounts(
+      pre_ledgerid,
+      null, null, null, null, null, null, null, null, null,null,
+      recordIds[0]
+    );
+    console.log('showaddAccountModal result: ', result);
+    // 获取第一个记录的字段作为默认值
+    const firstRecord = result.data;
+    let fullDate = firstRecord.date;
+    if (firstRecord.time && !fullDate.includes('T')) {
+      fullDate += 'T' + firstRecord.time;
+    }
+    // 填充表单字段
+    addAccountDateinput.value = fullDate;
+    addAccountNoteinput.value = firstRecord.note;
+    addAcountMoneyinput.value = firstRecord.amount;
+    addAccountTypeinput.value = firstRecord.type;
+    addAccountCategoryinput.value = firstRecord.category_name;
+    addAccountSubCategoryinput.value = firstRecord.sub_category_name;
+
+    // 修改提交处理逻辑
+    if (submitHandler) {
+      document.getElementById('addAccountModalconfirmBtn').removeEventListener('click', submitHandler);
+    }
+    submitHandler = async () => {
+      const updatedRecord = {
         date: document.getElementById('addAccountDateInput').value,
         note: document.getElementById('addAccountNoteInput').value,
         amount: parseFloat(document.getElementById('addAccountMoneyInput').value),
         type: document.getElementById('addAccountTypeInput').value,
-        transaction_time : document.getElementById('addAccountDateInput').value.replace('T', ' '),
         category_name: document.getElementById('addAccountCategoryInput').value,
         sub_category_name: document.getElementById('addAccountSubCategoryInput').value || null
       };
-  
-      // 提交记录
+
       try {
-        const result = await window.electronAPI.addRecord(pre_ledgerid, record);
+        const result = await window.electronAPI.updateRecords(
+          pre_ledgerid,
+          recordIds,
+          updatedRecord
+        );
         if (result.success) {
-          await myalert('记录添加成功!', 'info');
+          await myalert(`成功更新 ${result.updated} 条记录`, 'info');
           addAccountModal.style.display = 'none';
-          // 刷新当前账本视图
-          const currentLedgerId = getLedgerIdFromPath();
-          showLedgerDetail(currentLedgerId);
-        } else {
-          await myalert(`添加失败: ${result.message}`, 'error');
+          showLedgerDetail(pre_ledgerid);
         }
       } catch (err) {
-        await myalert('添加记录时发生错误', 'error');
+        await myalert('更新失败: ' + err.message, 'error');
       }
+    };
+  } catch (error) {
+    await myalert('获取记录详情失败', 'error');
+  }
+} else {
+  document.getElementById('addAccountModalconfirmBtn').innerText = '确认创建';
+  document.getElementById('addAccountModalTitle').innerText = '新增记录';
+  if (submitHandler) {
+    document.getElementById('addAccountModalconfirmBtn').removeEventListener('click', submitHandler);
+  }
+  submitHandler = async()  => {
+  const record = {
+    date: document.getElementById('addAccountDateInput').value,
+    note: document.getElementById('addAccountNoteInput').value,
+    amount: parseFloat(document.getElementById('addAccountMoneyInput').value),
+    type: document.getElementById('addAccountTypeInput').value,
+    transaction_time : document.getElementById('addAccountDateInput').value.replace('T', ' '),
+    category_name: document.getElementById('addAccountCategoryInput').value,
+    sub_category_name: document.getElementById('addAccountSubCategoryInput').value || null
+  };
+
+  // 提交记录
+  try {
+    const result = await window.electronAPI.addRecord(pre_ledgerid, record);
+    if (result.success) {
+      await myalert('记录添加成功!', 'info');
+      addAccountModal.style.display = 'none';
+      // 刷新当前账本视图
+      const currentLedgerId = getLedgerIdFromPath();
+      showLedgerDetail(currentLedgerId);
+    } else {
+      await myalert(`添加失败: ${result.message}`, 'error');
+    }
+  } catch (err) {
+    await myalert('添加记录时发生错误', 'error');
+  }
 };
+}
 document.getElementById('addAccountModalconfirmBtn').addEventListener('click', submitHandler);
 }
 
 // 新增获取账本ID的函数
 function getLedgerIdFromPath() {
+  
   const pathSegments = window.location.pathname.split('/');
+  console.log('getLedgerIdFromPath is running,pathSegments: ', pathSegments);
   const ledgerIndex = pathSegments.findIndex(segment => segment.toLowerCase() === 'ledger');
   
   if (ledgerIndex !== -1 && pathSegments.length > ledgerIndex + 1) {
@@ -772,27 +864,88 @@ filterModalconfirmBtn.onclick = async () => {
 
 
 
-// 修改displayAccounts方法
 function displayAccounts(accounts, containerId = 'accounts', isFilterResult = false) {
   const accountsElement = document.getElementById(containerId);
   let html = '';
   
+  // 清空之前的统计
+  document.getElementById('totalAmount').textContent = '0.00';
+
+  // 空状态处理
+  if(accounts.length === 0) {
+    accountsElement.innerHTML = '<div class="empty-tip">暂无记录</div>';
+    return;
+  }
+
+  // 筛选结果标题
   if (isFilterResult) {
     html += `<div class="filter-result-title">筛选结果（共 ${accounts.length} 条）</div>`;
   }
-  
-  html += accounts
-    .map(entry => {
-      const date = new Date(entry.date);
-      return `<div>Date: ${date.toLocaleDateString()}, Amount: ${entry.amount}, Note: ${entry.note}</div>`;
-    })
-    .join('');
-  
+
+  // 全选区域
+  html += `
+    <div class="select-all">
+      <input type="checkbox" id="selectAll">
+      <label>全选</label>
+    </div>
+  `;
+
+  // 生成账户条目
+  html += accounts.map(entry => `
+    <div class="account-item">
+      <input type="checkbox" class="record-checkbox" data-id="${entry.id}" data-type="${entry.type}" data-amount="${entry.amount}">
+      <div class="date">${new Date(entry.date).toLocaleDateString()}</div>
+      <div class="type ${entry.type === '支出' ? 'expense' : 'income'}">${entry.type}</div>
+      <div class="amount">${Number(entry.amount).toFixed(2)}</div>
+      <div class="note">${entry.note || '无备注'}</div>
+    </div>
+  `).join('');
+
   accountsElement.innerHTML = html;
+
+  // 金额计算函数
+  const calculateTotal = () => {
+    const checkedBoxes = document.querySelectorAll('.record-checkbox:checked');
+    const elements = checkedBoxes.length > 0 ? 
+      Array.from(checkedBoxes) : 
+      document.querySelectorAll('.record-checkbox');
+
+    const total = Array.from(elements).reduce((sum, element) => {
+      const type = element.dataset.type;
+      const amount = parseFloat(element.dataset.amount);
+      return sum + (type === '支出' ? -amount : amount);
+    }, 0);
+
+    document.getElementById('totalAmount').textContent = total.toFixed(2);
+  };
+
+  // 全选功能
+  const selectAll = document.getElementById('selectAll');
+  selectAll.addEventListener('change', function(e) {
+    const checkboxes = document.querySelectorAll('.record-checkbox');
+    checkboxes.forEach(checkbox => checkbox.checked = e.target.checked);
+    calculateTotal();
+    toggleActionBar();
+  });
+
+  // 单个选择功能
+  document.querySelectorAll('.record-checkbox').forEach(checkbox => {
+    checkbox.addEventListener('change', () => {
+      // 同步全选状态
+      const allChecked = document.querySelectorAll('.record-checkbox:checked').length;
+      selectAll.checked = allChecked === accounts.length;
+      
+      calculateTotal();
+      toggleActionBar();
+    });
+  });
+
+  // 初始计算总额
+  calculateTotal();
 }
 
 // 修改 showLedgerDetail 方法以显示月份列表
-function showLedgerDetail(ledgerId) {
+async function showLedgerDetail(ledgerId) {
   document.getElementById('ledger-list').style.display = 'none';
   console.log('hidden');
   document.getElementById('ledger-detail').style.display = 'block';
@@ -808,8 +961,9 @@ function showLedgerDetail(ledgerId) {
   getAccountsForMonth(ledgerId, currentYear, currentMonth);
   
   // 生成月份列表并显示在左侧
-  const monthList = generateMonthList(currentYear, currentMonth);
-  displayMonthList(monthList);
+  // const monthList = generateMonthList(currentYear, currentMonth);
+  // displayMonthList(monthList);
+  await displayMonthList(ledgerId); 
 
   // 监听月份列表的点击事件
   document.getElementById('month-list').addEventListener('click', async (event) => {
@@ -837,6 +991,65 @@ async function getAccountsForMonth(ledgerId, year, month) {
     await myalert('获取月份记录时发生错误', 'error');
   }
 }
+
+function toggleActionBar() {
+  const checkboxes = document.querySelectorAll('.record-checkbox');
+  const checked = document.querySelectorAll('.record-checkbox:checked');
+  const batchActions = document.querySelector('.batch-actions');
+  const selectAllContainer = document.querySelector('.select-all');
+  const selectAllCheckbox = document.getElementById('selectAll');
+
+  // 批量操作栏显示逻辑
+  batchActions.style.display = checked.length > 0 ? 'flex' : 'none';
+
+  // 全选容器显示逻辑（当有记录时显示）
+  if (selectAllContainer) {
+    selectAllContainer.style.display = checkboxes.length > 0 ? 'block' : 'none';
+    
+    // 同步全选状态
+    selectAllCheckbox.checked = checked.length === checkboxes.length && checkboxes.length > 0;
+    
+    // 全选按钮可见性（无记录时隐藏）
+    selectAllContainer.style.visibility = checkboxes.length > 0 ? 'visible' : 'hidden';
+  }
+}
+
+// 批量删除功能
+document.getElementById('batchDeleteBtn').addEventListener('click', async () => {
+  const checked = document.querySelectorAll('.record-checkbox:checked');
+  const ids = Array.from(checked).map(c => c.dataset.id);
+
+  const confirm = await window.electronAPI.myalert({
+    type: 'question',
+    title: '确认删除',
+    message: `确定要删除选中的 ${ids.length} 条记录吗？`,
+    buttons: ['取消', '确定']
+  });
+
+  if (confirm.response === 1) {
+    try {
+      const result = await window.electronAPI.deleteRecords(getLedgerIdFromPath(), ids);
+      if (result.success) {
+        console.log('delete success');
+        const currentLedgerId = getLedgerIdFromPath();
+        showLedgerDetail(currentLedgerId);
+        myalert('删除成功', 'info');
+      }
+    } catch (err) {
+      myalert('删除失败: ' + err.message, 'error');
+    }
+  }
+});
+
+// 批量修改功能
+document.getElementById('batchEditBtn').addEventListener('click', async () => {
+  const checked = document.querySelectorAll('.record-checkbox:checked');
+  const ids = Array.from(checked).map(c => c.dataset.id);
+  
+  // 显示修改模态框（复用添加记录的模态）
+  showaddAccountModal(true, ids);
+});
+
 
 // 页面加载时初始化
 window.onload = () => {

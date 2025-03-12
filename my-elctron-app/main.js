@@ -76,28 +76,32 @@ ipcMain.handle('show-dialog', async (event, options) => {
 });
 
 // 获取流水
-ipcMain.handle('get-accounts', async (event, ledgerId, year, month, category, subCategory, note, amountLeast, amountMost, timeStart, timeEnd, type) => {
+ipcMain.handle('get-accounts', async (event, ledgerId, year, month, category, subCategory, note, amountLeast, amountMost, timeStart, timeEnd, type,transactionId) => {
   return new Promise((resolve, reject) => {
     const args = [
       './python/query.py',
       '--ledgerid', ledgerId.toString()
     ];
-    if (timeStart || timeEnd) {
-      args.push('--time', 
-        timeStart || '1970-01-01',
-        timeEnd || '2100-12-31'
-      );
+    if (transactionId) {
+      args.push('--transactionId', transactionId.toString());
     } else {
-      if (year) args.push('-y', year.toString());
-      if (month) args.push('-m', month.toString());
+      if (timeStart || timeEnd) {
+        args.push('--time', 
+          timeStart || '1970-01-01',
+          timeEnd || '2100-12-31'
+        );
+      } else {
+        if (year) args.push('-y', year.toString());
+        if (month) args.push('-m', month.toString());
+      }
+      if (category) args.push('--category', category);
+      if (subCategory) args.push('--subcategory', subCategory);
+      if (note) args.push('--note', note);
+      if (amountLeast !== null || amountMost !== null) {
+        args.push('--amount', `${amountLeast || ''},${amountMost || ''}`);
+      }
+      if (type) args.push('--type', type);
     }
-    if (category) args.push('--category', category);
-    if (subCategory) args.push('--subcategory', subCategory);
-    if (note) args.push('--note', note);
-    if (amountLeast !== null || amountMost !== null) {
-      args.push('--amount', `${amountLeast || ''},${amountMost || ''}`);
-    }
-    if (type) args.push('--type', type);
     const pythonProcess = spawn('python', args);
     console.log('query args:', args);
 
@@ -240,7 +244,48 @@ ipcMain.handle('import-preset', async (_, ledgerId, presetId) => {
     handlePythonProcess(pythonProcess, resolve, reject);
   });
 });
+// 批量删除记录
+ipcMain.handle('delete-records', async (_, ledgerId, recordIds) => {
+  return new Promise((resolve, reject) => {
+    const pythonProcess = spawn('python', [
+      Path.join(__dirname, './python/delete_and_update.py'),
+      'delete',
+      ledgerId.toString(),
+      JSON.stringify(recordIds)
+    ]);
+    console.log('args:',[
+      Path.join(__dirname, './python/delete_and_update.py'),
+      ledgerId.toString(),
+      JSON.stringify(recordIds)
+    ]);
+    handlePythonProcess(pythonProcess, resolve, reject);
+  });
+});
+//获取月份
+ipcMain.handle('get-months-with-records', async (_, ledgerId) => {
+  return new Promise((resolve, reject) => {
+    const pythonProcess = spawn('python', [
+      Path.join(__dirname, './python/get_months.py'),
+      ledgerId.toString()
+    ]);
+    
+    handlePythonProcess(pythonProcess, resolve, reject);
+  });
+});
 
+// 批量更新记录
+ipcMain.handle('update-records', async (_, ledgerId, recordIds, recordData) => {
+  return new Promise((resolve, reject) => {
+    const pythonProcess = spawn('python', [
+      Path.join(__dirname, './python/delete_and_update.py'),
+      'update',
+      ledgerId.toString(),
+      JSON.stringify(recordIds),
+      JSON.stringify(recordData)
+    ]);
+    handlePythonProcess(pythonProcess, resolve, reject);
+  });
+});
 // ==================== 通用处理函数 ====================
 function handlePythonProcess(process, resolve, reject) {
   let output = '';

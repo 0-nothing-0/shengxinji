@@ -225,3 +225,219 @@ div.mode-content.active {
 .preview-item .preview-edit-amount {
   width: 80px;
 }
+
+/* mainpage.css 新增样式 */
+#ledger-detail .container {
+  display: grid;
+  grid-template-columns: 240px 2fr; /* 第一列宽度为 240px，第二列自适应填满 */
+  gap: 20px; /* 列与列之间的间距 */
+  height: calc(100vh - 40px); /* 父容器高度 */
+  width: 100%; /* 确保容器占满父容器宽度 */
+  box-sizing: border-box; /* 确保 padding 和 border 不会影响布局 */
+}
+
+/* 左侧边栏 */
+#month-list.sidebar {
+  background: #fff;
+  padding: 15px;
+  overflow-y: auto;
+  border-right: 1px solid #ddd; /* 边框分割线 */
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  height: 100%; /* 确保边栏高度与容器一致 */
+  box-sizing: border-box; /* 确保 padding 和 border 不会影响布局 */
+}
+
+#month-list.sidebar li {
+  padding: 12px;
+  margin: 6px 0;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+#month-list.sidebar li:hover {
+  background: #f5f5f5;
+}
+
+/* 右侧主内容区 */
+.main-content {
+  background: #fff;
+  padding: 20px;
+  overflow-y: auto; /* 滚动条适应内容超出 */
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  height: 100%; /* 确保主内容高度与容器一致 */
+  box-sizing: border-box; /* 确保 padding 和 border 不会影响布局 */
+}
+/* 按钮栏 */
+.action-bar {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  margin-bottom: 20px;
+}
+
+.btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #2196F3;
+  color: white;
+  margin: 4px;
+}
+
+.btn:hover { background: #1976D2; }
+.btn.danger { background: #f44336; }
+.btn.danger:hover { background: #d32f2f; }
+.batch-actions {
+  display: none;
+  margin-left: auto;
+}
+/* 记录容器 */
+.accounts-container {
+  flex: 1;
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  overflow-y: auto;
+}
+
+/* 记录项样式 */
+.account-item {
+  display: grid;
+  grid-template-columns: 40px 1fr 1fr 2fr;
+  align-items: center;
+  padding: 12px;
+  border-bottom: 1px solid #eee;
+  gap: 15px;
+}
+
+.account-item:hover {
+  background: #f9f9f9;
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+.year-group {
+  margin: 8px 0;
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.year-header {
+  padding: 10px 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  background: #f8f9fa;
+  transition: background 0.2s;
+}
+
+.year-header:hover {
+  background: #e9ecef;
+}
+
+.toggle-icon {
+  font-size: 12px;
+  color: #666;
+}
+
+.month-group {
+  display: none; /* 默认收起 */
+  padding: 5px 15px;
+}
+
+.month-item {
+  padding: 8px 12px;
+  margin: 3px 0;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.month-item:hover {
+  background: #e3f2fd;
+}
+
+.month-item.active {
+  background: #2196F3;
+  color: white;
+}
+/* mainpage.css 新增样式 */
+.sidebar-container {
+  width: 240px;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 60px);
+}
+
+.stats-panel {
+  background: #fff;
+  padding: 15px;
+  border-top: 1px solid #eee;
+  box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
+  height: 100px; /* 固定高度 */
+}
+
+.stats-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  margin: 8px 0;
+}
+
+/* 调整账本列表滚动 */
+#ledger-list.view {
+  height: calc(100vh - 100px);
+  overflow-y: auto;
+}
+
+/* 保持原有滚动条样式 */
+.sidebar {
+  flex: 1;
+  overflow-y: auto;
+}
+.select-all {
+  padding: 10px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #eee;
+}
+
+.expense { color: #f44336; }
+.income { color: #4caf50; }
+
+.account-item {
+  display: grid;
+  grid-template-columns: 30px 1fr 80px 120px 2fr;
+  align-items: center;
+  padding: 12px;
+  border-bottom: 1px solid #eee;
+}
+
+.date { color: #666; font-size: 0.9em; }
+.note { color: #888; overflow: hidden; text-overflow: ellipsis; }

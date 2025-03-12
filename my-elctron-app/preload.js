@@ -26,7 +26,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   myalert: (options) => ipcRenderer.invoke('show-dialog', options), // 暴露 myalert 方法
   importData: (importPath,ledgerId) => ipcRenderer.invoke('import-data', importPath,ledgerId),
   getAccounts: (ledgerId, year=null, month=null, category=null, subCategory=null, note=null, 
-    amountLeast=null, amountMost=null, timeStart=null, timeEnd=null, type=null) => 
+    amountLeast=null, amountMost=null, timeStart=null, timeEnd=null, type=null,transactionId=null) => 
 ipcRenderer.invoke('get-accounts', ledgerId, year, month, category, subCategory, note, 
-           amountLeast, amountMost, timeStart, timeEnd, type),
+           amountLeast, amountMost, timeStart, timeEnd, type,transactionId),
+  deleteRecords: (ledgerId, recordIds) => ipcRenderer.invoke('delete-records', ledgerId, recordIds),
+  updateRecords: (ledgerId, recordIds, recordData) => ipcRenderer.invoke('update-records', ledgerId, recordIds, recordData),
+  getMonthsWithRecords: (ledgerId) => ipcRenderer.invoke('get-months-with-records', ledgerId)
 });

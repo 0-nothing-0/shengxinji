@@ -32,14 +32,37 @@
           </div>
         </div> 
   </div>
-  <div id="ledger-detail" class="view" >
-    <div id="month-list"></div>
-    <div id="accounts"></div>
-    <div id="account-list"></div>
-    <button id="importBtn" >导入</button>
-    <button id="addAccountBtn" >新建记录</button>
-    <button id="addfromDefaultBtn" >从预设添加</button>
-    <button id="filterBtn">筛选</button>
+  <div id="ledger-detail" class="view">
+    <div class="container">
+      <div class="sidebar-container">
+        <div id="month-list" class="sidebar"></div>
+        <!-- 新增统计面板 -->
+        <div class="stats-panel">
+          <div class="stats-item">
+            <span>当前总额：</span>
+            <span id="totalAmount">0.00</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 右侧主内容 -->
+      <div class="main-content">
+        <!-- 按钮栏 -->
+        <div class="action-bar">
+          <button id="importBtn" class="btn">导入</button>
+          <button id="addAccountBtn" class="btn">新建记录</button>
+          <button id="addfromDefaultBtn" class="btn">从预设添加</button>
+          <button id="filterBtn" class="btn">筛选</button>
+          <div class="batch-actions">
+            <button id="batchDeleteBtn" class="btn danger">删除所选</button>
+            <button id="batchEditBtn" class="btn">修改所选</button>
+          </div>
+        </div>
+        
+        <!-- 记录容器 -->
+        <div id="accounts" class="accounts-container"></div>
+      </div>
+    </div>
     <div id="importModal" class="modal">
       <div class="modal-content">
         <span class="close" id="importModalCloseBtn">&times;</span>
@@ -52,44 +75,51 @@
     </div> 
     <div id="addAccountModal" class="modal">
       <span class="close" id="addAccountModalCloseBtn">&times;</span>
-      <h3>新建记录</h3>
-      
+      <h3 id ="addAccountModalTitle">新建记录</h3>
+      <div>
       <!-- 输入记录日期 -->
       <label for="addAccountDateInput">记录日期:</label>
       <input type="datetime-local" id="addAccountDateInput" value="">
-
-      <!-- 输入备注 -->
+      </div>
+      <div>
+        <!-- 输入备注 -->
       <label for="addAccountNoteInput">备注:</label>
       <input type="text" id="addAccountNoteInput" placeholder="输入备注">
-
-      <!-- 输入金额 -->
+      </div>
+      
+      <div>
+        <!-- 输入金额 -->
       <label for="addAccountMoneyInput">金额:</label>
       <input type="number" id="addAccountMoneyInput" placeholder="输入金额">
-
-      <!-- 输入收支类型 -->
+      </div>
+      <div>
+        <!-- 输入收支类型 -->
       <label for="addAccountTypeInput">收支类型:</label>
       <select id="addAccountTypeInput">
         <option value="支出" selected>支出</option>
         <option value="收入">收入</option>
       </select>
-
-      <!-- 选择/新建 一级分类 -->
-<label for="addAccountCategoryInput">一级分类:</label>
-<input type="text" id="addAccountCategoryInput" list="primaryCategories" placeholder="请输入/选择一级分类">
-<datalist id="primaryCategories">
-  <!-- 这里可以动态添加已有的一级分类选项 -->
-</datalist>
-
-<!-- 选择/新建 二级分类 -->
-<label for="addAccountSubCategoryInput">二级分类:</label>
-<input type="text" id="addAccountSubCategoryInput" list="subCategories" placeholder="请输入/选择二级分类">
-<datalist id="subCategories">
-  <!-- 这里可以动态添加已有的二级分类选项 -->
-</datalist>
-
-
-      <button id="addAccountModalconfirmBtn" class="cfmBtn">确认创建</button>
-
+      </div>
+      
+      <div>
+        <!-- 选择/新建 一级分类 -->
+      <label for="addAccountCategoryInput">一级分类:</label>
+      <input type="text" id="addAccountCategoryInput" list="primaryCategories" placeholder="请输入/选择一级分类">
+      <datalist id="primaryCategories">
+      <!-- 这里可以动态添加已有的一级分类选项 -->
+      </datalist>
+      </div>
+      <div>
+        <!-- 选择/新建 二级分类 -->
+        <label for="addAccountSubCategoryInput">二级分类:</label>
+        <input type="text" id="addAccountSubCategoryInput" list="subCategories" placeholder="请输入/选择二级分类">
+        <datalist id="subCategories">
+        <!-- 这里可以动态添加已有的二级分类选项 -->
+        </datalist>
+      </div>  
+      <div>
+        <button id="addAccountModalconfirmBtn" class="cfmBtn btn" >确认创建</button>
+      </div>
     </div>
         <!-- 预设模态框 -->
     <div id="presetModal" class="modal">
@@ -103,7 +133,7 @@
           <button class="mode-btn" data-mode="create">新建预设</button>
           <button class="mode-btn" data-mode="delete">删除预设</button>
         </div>
-
+  
         <!-- 选择预设模式 -->
         <div id="presetSelectMode" class="mode-content active">
           <select id="presetSelector" class="preset-select">
@@ -113,7 +143,7 @@
           <button id="importPresetBtn" class="cfmBtn">导入选中预设</button>
           <div id="emptyPresetTip" >暂无可用预设</div>
         </div>
-
+  
         <!-- 新建预设模式 -->
         <div id="presetEditMode" class="mode-content">
           <input type="text" id="presetNameInput" placeholder="输入预设名称">
@@ -130,7 +160,7 @@
     </div>
         <!-- 筛选模态框 -->
       <!-- 修改后的筛选模态框 -->
-<div id="filterModal" class="modal">
+  <div id="filterModal" class="modal">
   <div class="modal-content">
     <span class="close" id="filterModalCloseBtn">&times;</span>
     <h3>筛选条件</h3>
@@ -176,9 +206,11 @@
     </div>
     <button id="filterModalconfirmBtn" class="cfmBtn">提交筛选</button>
   </div>
-</div>
+  </div>
   </div>
   </body>
   <script src="./renderer.js"></script>
   <script src="./view_manager.js"></script>
 </html>
+
+
