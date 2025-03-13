@@ -127,8 +127,8 @@ def process_csv_and_store_to_db(conn,csv_file_path):
                 'date': date_part,
                 'time': time_part,
                 'amount': amount,
-                'description': description,
-                "category" : category_name
+                'note': description,
+                "category_name" : category_name,
             })
 
         # 提交事务

@@ -1,36 +1,98 @@
-/* #addLedgerBtn {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    padding: 10px;
-    background-color: #4CAF50;
-    color: white;
-    border: none;
-    cursor: pointer;
-    transition-duration: 0.4s;
-  }
-#addLedgerBtn:hover {
-     background-color: #3e8e41;
-} */
-
 .modal {
-    display: none; /* 默认隐藏 */
-    position: fixed; /* 固定位置 */
-    z-index: 100; /* 确保在其他内容之上 */
-    left: 25%;
-    top: 10%;
-    width: 50%;
-    height: 50%;
-    overflow: auto;
-    background-color: rgba(0,0,0,0.4); /* 半透明背景 */
+  display: none; /* 确保所有模态初始隐藏 */
+  position: fixed;
+  z-index: 100;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%); /* 居中定位 */
+  width: auto;
+  height: auto;
+  overflow: hidden;
+  background: transparent; /* 移除半透明背景 */
+  min-width: 600px;
 }
 
 .modal-content {
-    background-color: #fefefe;
-    margin: 15% auto;
-    padding: 20px;
-    border: 1px solid #888;
-    width: 80%;
+  background-color: #fefefe;
+  margin: 20px;
+  padding: 20px;
+  border: 1px solid #ddd; /* 改用简单边框 */
+  border-radius: 8px;
+  width: 90%;
+  min-width: 600px;
+  box-shadow: none; /* 移除阴影 */
+  overflow-x: hidden;
+}
+
+.modal h3 {
+  margin: 0 0 20px;
+  color: #333;
+  border-bottom: 2px solid #eee;
+  padding-bottom: 10px;
+}
+
+.modal input[type="text"],
+.modal input[type="number"],
+.modal input[type="date"],
+.modal select {
+  width: 100%;
+  padding: 8px;
+  margin: 8px 0;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.modal .cfmBtn {
+  background: #2196F3;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 15px;
+  width: 100%;
+  transition: background 0.3s;
+}
+
+.modal .cfmBtn:hover {
+  background: #1976D2;
+}
+
+/* 优化输入项布局 */
+.modal > div {
+  margin: 15px 0;
+}
+
+.modal label {
+  display: block;
+  margin: 10px 0 5px;
+  color: #666;
+  font-size: 0.9em;
+}
+
+/* 文件上传样式优化 */
+#importFileInput {
+  border: 2px dashed #ddd;
+  padding: 20px;
+  text-align: center;
+  margin: 15px 0;
+  display: block;
+}
+
+/* 预设模态特殊样式 */
+#presetModal .modal-content {
+  max-width: 800px;
+}
+#addAccountModal .modal-content label{
+  margin: 5px;
+} 
+
+.record-form {
+  padding: 10px;
+  background: #f8f9fa;
+  margin: 10px 0;
+  border-radius: 6px;
 }
 
 .close {
@@ -54,6 +116,7 @@ body {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
   }
 
   .ledger-grid {
@@ -278,7 +341,11 @@ div.mode-content.active {
   background: #fff;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  min-width: 800px;
   margin-bottom: 20px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .btn {
@@ -290,6 +357,7 @@ div.mode-content.active {
   background: #2196F3;
   color: white;
   margin: 4px;
+  text-align: center;
 }
 
 .btn:hover { background: #1976D2; }
@@ -307,22 +375,55 @@ div.mode-content.active {
   padding: 20px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   overflow-y: auto;
+  overflow-x: auto;
+  min-width: 800px;
+}
+/* 表头样式 */
+.account-header {
+  display: grid;
+  grid-template-columns: 30px 100px 120px 100px 120px 120px 1fr;
+  padding: 12px;
+  font-weight: bold;
+  border-bottom: 2px solid #eee;
+  background: #f8f9fa;
+  min-width: 800px;
+  /* 新增对齐保障 */
+  box-sizing: border-box;
+  grid-column-gap: 15px;
 }
 
 /* 记录项样式 */
 .account-item {
   display: grid;
-  grid-template-columns: 40px 1fr 1fr 2fr;
+  grid-template-columns: 50px 100px 120px 100px 120px 120px 1fr;
   align-items: center;
   padding: 12px;
   border-bottom: 1px solid #eee;
   gap: 15px;
+  min-width: 800px;
+  /* 新增对齐保障 */
+  box-sizing: border-box;
 }
-
 .account-item:hover {
   background: #f9f9f9;
+  display: grid;
+  grid-template-columns: 50px 100px 120px 100px 120px 120px 1fr;
+  min-width: 800px;
+}
+/* 备注展开样式 */
+.note {
+  white-space: nowrap; /* 默认不换行 */
+  overflow: hidden;
+  text-overflow: ellipsis; /* 超出部分显示省略号 */
+  max-width: 200px; /* 根据需要调整宽度 */
+  cursor: pointer; /* 点击时展开 */
 }
 
+.note.expanded {
+  white-space: normal; /* 展开时允许换行 */
+  overflow: visible;
+  text-overflow: unset;
+}
 /* 滚动条样式 */
 ::-webkit-scrollbar {
   width: 8px;
@@ -394,14 +495,18 @@ div.mode-content.active {
   display: flex;
   flex-direction: column;
   height: calc(100vh - 60px);
+  gap :10px;
 }
 
 .stats-panel {
   background: #fff;
   padding: 15px;
+  border-radius: 8px;
   border-top: 1px solid #eee;
   box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
   height: 100px; /* 固定高度 */
+  flex-direction: column;
+  display: flex;
 }
 
 .stats-item {
@@ -431,13 +536,134 @@ div.mode-content.active {
 .expense { color: #f44336; }
 .income { color: #4caf50; }
 
-.account-item {
-  display: grid;
-  grid-template-columns: 30px 1fr 80px 120px 2fr;
-  align-items: center;
-  padding: 12px;
-  border-bottom: 1px solid #eee;
+#backToLedgers{
+  color: #666;
+  background-color: #e3e3e3;
+}
+#drawBtn{
+  position: relative;
+  bottom: 15px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  margin-top: auto; /* 兼容flex布局 */
+}
+.preset-record {
+  border-bottom: 1px solid #ddd;
+  padding: 10px 0;
 }
 
+.preset-record-header {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.preset-amount {
+  font-weight: bold;
+}
+
+.preset-type {
+  padding: 2px 5px;
+  border-radius: 3px;
+  font-size: 0.9em;
+}
+
+.preset-type.expense {
+  background-color: #ffebee;
+  color: #c62828;
+}
+
+.preset-type.income {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+.preset-category, .preset-subcategory {
+  font-size: 0.9em;
+  color: #666;
+}
+
+.preset-note {
+  margin-top: 5px;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.preset-note.expanded {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+}
+#importModal .modal-content {
+  max-height: 80vh; /* 限制模态框的最大高度 */
+  overflow-y: auto; /* 允许垂直滚动 */
+}
+
+#import-entries-container {
+  max-height: 60vh; /* 限制内容区域的最大高度 */
+  overflow-y: auto; /* 允许垂直滚动 */
+}
+#importModal .modal-content {
+  max-height: 80vh; /* 限制模态框的最大高度 */
+  overflow-y: auto; /* 允许垂直滚动 */
+}
+
+#import-entries-container {
+  max-height: 60vh; /* 限制内容区域的最大高度 */
+  overflow-y: auto; /* 允许垂直滚动 */
+}
+
+
+.remove-record-btn {
+  background: none;
+  border: none;
+  color: #ff0000;
+  cursor: pointer;
+  font-size: 1.2em;
+}
+
+.remove-record-btn:hover {
+  color: #cc0000;
+}
 .date { color: #666; font-size: 0.9em; }
 .note { color: #888; overflow: hidden; text-overflow: ellipsis; }
+/* 导入模态框简化样式 */
+#importModal .modal-content {
+  width: 400px;
+  padding: 20px;
+}
+
+/* 特殊结果标题样式 */
+.special-result-title {
+  font-size: 1.2em;
+  color: #666;
+  margin-bottom: 15px;
+  padding: 10px;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+}
+
+.category-header input {
+  width: 120px;
+  padding: 4px;
+}
+
+.success {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.danger {
+  background-color: #f44336;
+  color: white;
+}
+
+.account-item .category input {
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 4px 8px;
+}

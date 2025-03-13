@@ -48,11 +48,17 @@ def query_entries(ledger_id, year=None, month=None, category=None, subcategory=N
 
     # 分类条件更新为新的字段名
     if category:
-        query += ' AND category_name = ?'  # 修改点1：category -> category_name
-        params.append(category)
+        if category == '未分类':
+            query += ' AND category_name IS NULL'
+        else:
+            query += ' AND category_name = ?'
+            params.append(category)
     if subcategory:
-        query += ' AND sub_category_name = ?'  # 修改点2：subcategory -> sub_category_name
-        params.append(subcategory)
+        if subcategory == '未分类':
+            query += ' AND sub_category_name IS NULL'
+        else:
+            query += ' AND sub_category_name = ?'
+            params.append(subcategory)
 
     # 其他条件保持不变但字段验证
     if note:

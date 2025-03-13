@@ -35,6 +35,7 @@
   <div id="ledger-detail" class="view">
     <div class="container">
       <div class="sidebar-container">
+        <button id="backToLedgers" class="btn" > 返回账本列表</button>
         <div id="month-list" class="sidebar"></div>
         <!-- 新增统计面板 -->
         <div class="stats-panel">
@@ -42,6 +43,7 @@
             <span>当前总额：</span>
             <span id="totalAmount">0.00</span>
           </div>
+          <div class="btn" id="drawBtn">绘制图表</div>
         </div>
       </div>
       
@@ -63,18 +65,20 @@
         <div id="accounts" class="accounts-container"></div>
       </div>
     </div>
-    <div id="importModal" class="modal">
-      <div class="modal-content">
-        <span class="close" id="importModalCloseBtn">&times;</span>
-        <h3>导入记录</h3>
-        <input type="file" accept=".csv" id="importFileInput" placeholder="输入导入路径">
-        <button id="importModalconfirmBtn" class ="cfmBtn">确认</button>
-        <div id="import-entries-container">
+    <!-- 简化后的导入模态框 -->
+      <div id="importModal" class="modal">
+        <div class="modal-content">
+          <span class="close" id="importModalCloseBtn">&times;</span>
+          <h3>导入记录</h3>
+          <input type="file" accept=".csv" id="importFileInput">
+          <div class="modal-footer">
+            <button id="importModalconfirmBtn" class="btn">导入</button>
+          </div>
+        </div>
       </div>
-    </div> 
-    </div> 
     <div id="addAccountModal" class="modal">
-      <span class="close" id="addAccountModalCloseBtn">&times;</span>
+      <div class="modal-content"> 
+        <span class="close" id="addAccountModalCloseBtn">&times;</span>
       <h3 id ="addAccountModalTitle">新建记录</h3>
       <div>
       <!-- 输入记录日期 -->
@@ -119,6 +123,7 @@
       </div>  
       <div>
         <button id="addAccountModalconfirmBtn" class="cfmBtn btn" >确认创建</button>
+      </div>
       </div>
     </div>
         <!-- 预设模态框 -->

@@ -103,17 +103,12 @@ function clearModalInputs(modal) {
     if(element.type !== 'button') element.value = '';
   });
 }
+document.getElementById('backToLedgers').addEventListener('click', () => {
+  document.getElementById('ledger-detail').style.display = 'none';
+  document.getElementById('ledger-list').style.display = 'block';
+  history.pushState({}, '', '/');
+});
 
-// // 生成月份列表
-// function generateMonthList(currentYear, currentMonth) {
-//   const monthList = [];
-//   for (let i = 0; i < 12; i++) {
-//     const year = currentYear + Math.floor((currentMonth - i - 1) / 12);
-//     const month = (currentMonth - i - 1 + 12) % 12 + 1;
-//     monthList.push({ year, month });
-//   }
-//   return monthList;
-// }
 
 // 显示月份列表
 async function displayMonthList(ledgerId) {
@@ -131,7 +126,7 @@ async function displayMonthList(ledgerId) {
             <span>${year}年</span>
             <span class="toggle-icon">▼</span>
           </div>
-          <div class="month-list" data-year="${year}" style="display:none">
+          <div class="month-list" data-year="${year}" >
             ${months.map(month => `
               <div class="month-item" data-year="${year}" data-month="${month}">
                 ${month}月
@@ -179,12 +174,11 @@ function showLedgerModal() {
 };
 
 importBtn.onclick = showImportModal;
-
-function showImportModal() {
-  clearModalInputs(improtModal)
+let importedRecords = []; // 存储导入记录的ID
+async function showImportModal() {
+  clearModalInputs(improtModal);
   improtModal.style.display = 'block';
   importFileInput.value = '';
-  importFileInput.focus();  
 }
 
 addAccountBtn.onclick = function () {
@@ -384,6 +378,7 @@ ledgerModalconfirmBtn.onclick = async () => {
   });
 };
 
+// ==================== 导入按钮点击事件 ====================
 importModalconfirmBtn.onclick = async () => {
   const fileInput = document.getElementById('importFileInput');
   const selectedFile = fileInput.files[0];
@@ -392,42 +387,38 @@ importModalconfirmBtn.onclick = async () => {
     await myalert('请选择要导入的文件', 'error');
     return;
   }
-  const path = window.location.pathname;
-  console.log('path: '+ path);
+
   const ledgerId = getLedgerIdFromPath();
-  console.log('ledgerId: '+ ledgerId);
   if (!ledgerId) {
     await myalert('无法获取当前账本 ID', 'error');
     return;
   }
+
   try {
-    // 通过 preload.js 提交路径给 main.js
     const result = await window.electronAPI.importData(selectedFile.path, ledgerId);
-
+    
     if (result.success) {
-      // 如果成功，将新添加的条目打印在模态上
-      const entries = result.entries;
-      const entriesContainer = document.getElementById('import-entries-container');
-      entriesContainer.innerHTML = ''; // 清空之前的内容
-
-      // 采用懒加载方式显示条目
-      entries.forEach(entry => {
-        const entryElement = document.createElement('div');
-        entryElement.textContent = `类型: ${entry.type}, 金额: ${entry.amount}, 日期: ${entry.date}`;
-        entriesContainer.appendChild(entryElement);
-      });
-
-      // 显示模态框中的条目容器
-      entriesContainer.style.display = 'block';
+      // 1. 提示成功并关闭模态框
+      await myalert(`成功导入 ${result.entries.length} 条记录`, 'info');
+      improtModal.style.display = 'none';
+      
+      // 2. 直接使用接口返回的条目展示（添加标题）
+      displayAccounts(
+        result.entries, // 直接使用导入返回的条目
+        'accounts',
+        true,           // 标记为特殊结果
+        '导入结果'      // 展示标题
+      );
+      
+      // 3. 刷新月份列表
+      displayMonthList(ledgerId);
     } else {
-      await myalert(result.message || '导入失败', 'error');
+      await myalert(`导入失败: ${result.message}`, 'error');
     }
   } catch (error) {
-    console.error('导入过程中发生错误:', error);
-    await myalert('导入过程中发生错误', 'error');
+    await myalert(`导入失败: ${error.message}`, 'error');
   }
 };
-
 
 // 关闭模态框
 ledgerModalcloseBtn.onclick = () => {
@@ -572,21 +563,35 @@ modeSwitcher.addEventListener('click', (e) => {
 
   // 移除所有内联样式
   document.querySelectorAll('.mode-content').forEach(el => {
-    el.removeAttribute('style'); // 关键修复点
+    el.removeAttribute('style');
   });
+
   // 切换按钮状态
   modeBtns.forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  
+
   // 修正ID匹配逻辑
   const mode = btn.dataset.mode;
   document.querySelectorAll('.mode-content').forEach(el => {
     const targetMode = 
-    mode === 'create' ? 'Edit' : 
-    mode === 'delete' ? 'Delete' : 
-    'Select';
+      mode === 'create' ? 'Edit' : 
+      mode === 'delete' ? 'Delete' : 
+      'Select';
     el.classList.toggle('active', el.id === `preset${targetMode}Mode`);
   });
+
+  // 清空内容
+  if (mode === 'create') {
+    document.getElementById('presetNameInput').value = '';
+    document.getElementById('recordContainer').innerHTML = '';
+  } else if (mode === 'delete') {
+    loadPresetsForDelete();
+  } else {
+    // 清空预设选择模式的内容
+    document.getElementById('presetSelector').value = '';
+    document.getElementById('presetPreview').innerHTML = '';
+    loadPresets();
+  }
 });
 
 // 新增删除预设相关函数
@@ -687,35 +692,33 @@ submitPresetBtn.onclick = async () => {
   }
 };
 // ========== 预设选择事件 ==========
+// 在显示预设记录时，动态绑定点击事件
 presetSelector.addEventListener('change', async (e) => {
   const presetId = e.target.value;
   console.log('presetSelector change: ' + presetId);
   const result = await window.electronAPI.getPresetDetail(getLedgerIdFromPath(), presetId);
   if (result.success) {
     const previewHTML = result.data.records.map(r => `
-      <div class="preview-item" 
-           data-category="${r.category_name}" 
-           data-subcategory="${r.sub_category_name || ''}">
-        <label for="presetNote_${r.id}">备注:</label>
-        <input type="text" id="presetNote_${r.id}" placeholder="${r.note || '输入备注'}" value="${r.note}">
-
-        <label for="presetAmount_${r.id}">金额:</label>
-        <input type="number" id="presetAmount_${r.id}" placeholder="${r.amount}" value="${r.amount}">
-
-        <label for="presetType_${r.id}">收支类型:</label>
-        <select id="presetType_${r.id}">
-          <option value="支出" ${r.type === '支出' ? 'selected' : ''}>支出</option>
-          <option value="收入" ${r.type === '收入' ? 'selected' : ''}>收入</option>
-        </select>
-
-        <label for="presetCategory_${r.id}">分类:</label>
-        <input type="text" id="presetCategory_${r.id}" placeholder="${r.category_name || '无分类'}" value="${r.category_name}" readonly>
-
-        <label for="presetSubCategory_${r.id}">子分类:</label>
-        <input type="text" id="presetSubCategory_${r.id}" placeholder="${r.sub_category_name || '无子分类'}" value="${r.sub_category_name || ''}" readonly>
+      <div class="preset-record">
+        <div class="preset-record-header">
+          <span class="preset-amount">${Number(r.amount).toFixed(2)}</span>
+          <span class="preset-type ${r.type === '支出' ? 'expense' : 'income'}">${r.type}</span>
+          <span class="preset-category">${r.category_name || '未分类'}</span>
+          <span class="preset-subcategory">${r.sub_category_name || '未分类'}</span>
+        </div>
+        <div class="preset-note">
+          ${r.note || '无备注'}
+        </div>
       </div>
     `).join('');
     document.getElementById('presetPreview').innerHTML = previewHTML;
+
+    // 动态绑定点击事件
+    document.querySelectorAll('.preset-note').forEach(note => {
+      note.addEventListener('click', () => {
+        note.classList.toggle('expanded');
+      });
+    });
   }
 });
 
@@ -784,7 +787,7 @@ filterBtn.onclick = showFilterModal;
 
 async function showFilterModal() {
   filterModal.style.display = 'block';
-  
+
   // 清空输入
   document.getElementById('filterStartDate').value = '';
   document.getElementById('filterEndDate').value = '';
@@ -798,21 +801,24 @@ async function showFilterModal() {
   // 动态加载分类
   const ledgerId = getLedgerIdFromPath();
   const categories = await window.electronAPI.getCategories(ledgerId);
-  
+
   // 填充一级分类
   const primaryList = document.getElementById('filterPrimaryCategories');
-  primaryList.innerHTML = categories.map(c => `<option value="${c.name}">`).join('');
+  primaryList.innerHTML = '<option value="未分类">未分类</option>';
+  categories.forEach(c => {
+    primaryList.innerHTML += `<option value="${c.name}">${c.name}</option>`;
+  });
 
   // 监听一级分类变化
   document.getElementById('filterCategory').addEventListener('input', (event) => {
     const selectedCategory = categories.find(cat => cat.name === event.target.value);
     const subList = document.getElementById('filterSubCategories');
-    subList.innerHTML = '';
-    
+    subList.innerHTML = '<option value="未分类">未分类</option>';
+
     if (selectedCategory) {
-      subList.innerHTML = selectedCategory.sub_categories
-        .map(sub => `<option value="${sub.name}">`)
-        .join('');
+      selectedCategory.sub_categories.forEach(sub => {
+        subList.innerHTML += `<option value="${sub.name}">${sub.name}</option>`;
+      });
     }
   });
 }
@@ -850,7 +856,7 @@ filterModalconfirmBtn.onclick = async () => {
     );
 
     if (result.success) {
-      displayAccounts(result.data, 'accounts', true); // 添加第三个参数表示是筛选结果
+      displayAccounts(result.data, 'accounts', true, '筛选结果'); // 添加第三个参数表示是筛选结果
       filterModal.style.display = 'none';
       //document.getElementById('month-list').style.display = 'none';
     } else {
@@ -864,22 +870,32 @@ filterModalconfirmBtn.onclick = async () => {
 
 
 
-function displayAccounts(accounts, containerId = 'accounts', isFilterResult = false) {
+function displayAccounts(accounts, containerId = 'accounts', isSpecialResult = false, title = '') {
   const accountsElement = document.getElementById(containerId);
-  let html = '';
-  
+  let html = `
+    <div class="account-header">
+      <div></div> <!-- 占位checkbox列 -->
+      <span>时间</span>
+      <span>金额</span>
+      <span>收支类型</span>
+      <span>一级分类</span>
+      <span>二级分类</span>
+      <span>备注</span>
+    </div>
+  `;
+
   // 清空之前的统计
   document.getElementById('totalAmount').textContent = '0.00';
 
   // 空状态处理
-  if(accounts.length === 0) {
+  if (accounts.length === 0) {
     accountsElement.innerHTML = '<div class="empty-tip">暂无记录</div>';
     return;
   }
 
   // 筛选结果标题
-  if (isFilterResult) {
-    html += `<div class="filter-result-title">筛选结果（共 ${accounts.length} 条）</div>`;
+  if (isSpecialResult && title) {
+    html += `<div class="special-result-title">${title}（共 ${accounts.length} 条）</div>`;
   }
 
   // 全选区域
@@ -893,15 +909,32 @@ function displayAccounts(accounts, containerId = 'accounts', isFilterResult = fa
   // 生成账户条目
   html += accounts.map(entry => `
     <div class="account-item">
-      <input type="checkbox" class="record-checkbox" data-id="${entry.id}" data-type="${entry.type}" data-amount="${entry.amount}">
+      <input 
+        type="checkbox" 
+        class="record-checkbox" 
+        data-id="${entry.id}"
+        data-type="${entry.type}" 
+        data-amount="${Number(entry.amount).toFixed(2)}"
+      >
       <div class="date">${new Date(entry.date).toLocaleDateString()}</div>
-      <div class="type ${entry.type === '支出' ? 'expense' : 'income'}">${entry.type}</div>
       <div class="amount">${Number(entry.amount).toFixed(2)}</div>
-      <div class="note">${entry.note || '无备注'}</div>
+      <div class="type ${entry.type === '支出' ? 'expense' : 'income'}">${entry.type}</div>
+      <div class="category">${entry.category_name || '未分类'}</div>
+      <div class="subcategory">${entry.sub_category_name || '未分类'}</div>
+      <div class="note">
+        ${entry.note || '无备注'}
+      </div>
     </div>
   `).join('');
 
   accountsElement.innerHTML = html;
+
+  // 动态绑定备注点击事件
+  document.querySelectorAll('.note').forEach(note => {
+    note.addEventListener('click', () => {
+      note.classList.toggle('expanded');
+    });
+  });
 
   // 金额计算函数
   const calculateTotal = () => {
