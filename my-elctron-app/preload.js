@@ -31,5 +31,8 @@ ipcRenderer.invoke('get-accounts', ledgerId, year, month, category, subCategory,
            amountLeast, amountMost, timeStart, timeEnd, type,transactionId),
   deleteRecords: (ledgerId, recordIds) => ipcRenderer.invoke('delete-records', ledgerId, recordIds),
   updateRecords: (ledgerId, recordIds, recordData) => ipcRenderer.invoke('update-records', ledgerId, recordIds, recordData),
-  getMonthsWithRecords: (ledgerId) => ipcRenderer.invoke('get-months-with-records', ledgerId)
+  getMonthsWithRecords: (ledgerId) => ipcRenderer.invoke('get-months-with-records', ledgerId),
+  openChartWindow: (accounts) => {
+    return ipcRenderer.invoke('open-chart-window', accounts);
+  },
 });

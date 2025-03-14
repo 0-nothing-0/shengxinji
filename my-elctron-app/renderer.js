@@ -1090,3 +1090,16 @@ window.onload = () => {
   document.title = '账本管理系统 v1.0';
 };
 
+// ==================== 图表功能 ====================
+document.getElementById('drawBtn').addEventListener('click', async () => {
+  const accounts = Array.from(document.querySelectorAll('.account-item'))
+    .map(item => ({
+      date: item.querySelector('.date').textContent,
+      amount: parseFloat(item.querySelector('.amount').textContent),
+      type: item.querySelector('.type').textContent,
+      category: item.querySelector('.category').textContent,
+      subCategory: item.querySelector('.subcategory').textContent
+    }));
+
+  await window.electronAPI.openChartWindow(accounts); // 确保已暴露该API
+});

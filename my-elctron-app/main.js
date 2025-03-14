@@ -10,13 +10,62 @@ const createWindow = () => {
     height: 600,
     autoHideMenuBar: true,
     webPreferences: {
-      devTools: true,
+      devTools: false,
       preload: Path.resolve(__dirname, './preload.js')
       }
   })
 
   win.loadFile('index.html')
 }
+
+let chartWindow = null;
+
+ipcMain.handle('open-chart-window', async (event, accounts) => {
+  try {
+    // 如果窗口已存在则聚焦
+    if (chartWindow) {
+      chartWindow.focus();
+      return;
+    }
+    console.log('opening chart window');
+    // 创建新窗口
+    chartWindow = new BrowserWindow({
+      width: 1200,
+      height: 800,
+      autoHideMenuBar: true,
+      webPreferences: {
+        preload: Path.join(__dirname, 'preloadChart.js'),
+        contextIsolation: true, // 保持启用
+        sandbox: true,
+        nodeIntegration: false,
+        // 关键：允许预加载脚本访问模块
+        enableRemoteModule: false, // 禁用远程模块
+        worldSafeExecuteJavaScript: true
+      },
+    });
+
+    // 加载图表页面
+    await chartWindow.loadFile(Path.join(__dirname, './chartWindow.html'));
+
+    // 发送数据到图表窗口
+    chartWindow.webContents.send('chart-data', accounts);
+
+    // 窗口关闭时清理引用
+    chartWindow.on('closed', () => {
+      chartWindow = null;
+    });
+
+  } catch (error) {
+    console.error('打开图表窗口失败:', error);
+    dialog.showErrorBox('窗口错误', '无法创建图表窗口');
+  }
+});
+
+
+// 错误处理
+ipcMain.on('report-error', (event, errorMessage) => {
+  console.error('Error reported from renderer:', errorMessage);
+});
 
 app.whenReady().then(() => {
   createWindow()

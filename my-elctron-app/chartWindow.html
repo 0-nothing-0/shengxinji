@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline';">
+    <title>数据可视化</title>
+    <link rel="stylesheet" href="./css/charts.css">
+
+</head>
+<body>
+    <div class="tab-container">
+        <button class="tab-btn active" data-chart="dailyLine">每日趋势</button>
+        <button class="tab-btn" data-chart="monthlyLine">每月趋势</button>
+        <button class="tab-btn" data-chart="categoryPie">分类占比</button>
+        <button class="tab-btn" data-chart="subCategoryPie">子分类占比</button>
+    </div>
+    <div class="chart-wrapper">
+        <div id="dailyLine" class="chart-container active"></div>
+        <div id="monthlyLine" class="chart-container"></div>
+        <div id="categoryPie" class="chart-container"></div>
+        <div id="subCategoryPie" class="chart-container"></div>
+    </div>
+    <script src="./chartWindow.js"></script>
+    <script src="./echarts.min.js"></script>
+</body>
+</html>

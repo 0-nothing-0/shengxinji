@@ -1,0 +1,40 @@
+/* charts.css */
+body { 
+    margin: 20px; 
+    font-family: Arial; 
+  }
+  
+  .tab-container {
+    margin-bottom: 20px;
+    border-bottom: 2px solid #eee;
+  }
+  
+  .tab-btn {
+    padding: 10px 20px;
+    margin-right: 5px;
+    border: none;
+    background: #f0f0f0;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  
+  .tab-btn.active {
+    background: #409eff;
+    color: white;
+  }
+  
+  .chart-wrapper {
+    width: 100%;
+    height: 600px;
+    margin-top: 20px;
+  }
+  
+  .chart-container {
+    width: 100%;
+    height: 100%;
+    display: none;
+  }
+  
+  .chart-container.active {
+    display: block;
+  }

@@ -379,43 +379,26 @@ div.mode-content.active {
   min-width: 800px;
 }
 /* 表头样式 */
-.account-header {
+.account-header, .account-item {
   display: grid;
   grid-template-columns: 30px 100px 120px 100px 120px 120px 1fr;
-  padding: 12px;
-  font-weight: bold;
-  border-bottom: 2px solid #eee;
-  background: #f8f9fa;
-  min-width: 800px;
-  /* 新增对齐保障 */
-  box-sizing: border-box;
-  grid-column-gap: 15px;
-}
-
-/* 记录项样式 */
-.account-item {
-  display: grid;
-  grid-template-columns: 50px 100px 120px 100px 120px 120px 1fr;
-  align-items: center;
   padding: 12px;
   border-bottom: 1px solid #eee;
   gap: 15px;
   min-width: 800px;
-  /* 新增对齐保障 */
   box-sizing: border-box;
 }
-.account-item:hover {
-  background: #f9f9f9;
-  display: grid;
-  grid-template-columns: 50px 100px 120px 100px 120px 120px 1fr;
-  min-width: 800px;
+.account-item:hover { background: #f9f9f9; }
+.account-header {
+  font-weight: bold;
+  background: #f8f9fa;
+  border-bottom: 2px solid #eee;
 }
 /* 备注展开样式 */
 .note {
   white-space: nowrap; /* 默认不换行 */
   overflow: hidden;
   text-overflow: ellipsis; /* 超出部分显示省略号 */
-  max-width: 200px; /* 根据需要调整宽度 */
   cursor: pointer; /* 点击时展开 */
 }
 
