@@ -10,7 +10,7 @@ const createWindow = () => {
     height: 600,
     autoHideMenuBar: true,
     webPreferences: {
-      devTools: true,
+      devTools: false,
       preload: Path.resolve(__dirname, './preload.js')
       }
   })
