@@ -35,4 +35,10 @@ ipcRenderer.invoke('get-accounts', ledgerId, year, month, category, subCategory,
   openChartWindow: (accounts) => {
     return ipcRenderer.invoke('open-chart-window', accounts);
   },
+  getAppPath: () => {
+    return ipcRenderer.invoke('get-app-path').then(appPath => {
+      console.log('App path:', appPath);
+      return appPath; // 如果需要返回路径给渲染进程，可以在这里返回
+    });
+  },
 });

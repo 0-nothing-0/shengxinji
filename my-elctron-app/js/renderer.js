@@ -1,5 +1,6 @@
 // renderer.js
 console.log('renderer.js is running');
+console.log('path:',window.electronAPI.getAppPath())
 // 新建账本相关变量
 const ledgerModalcloseBtn = document.getElementById('ledgerModalCloseBtn');
 const ledgerModal = document.getElementById('ledgerModal');

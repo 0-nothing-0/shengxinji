@@ -1,45 +1,25 @@
 {
-  "name": "my-electron-app",
+  "name": "your-app-name",
   "version": "1.0.0",
-  "description": "hello world",
   "main": "./js/main.js",
-  "devDependencies": {
-    "electron": "^31.7.7",
-    "electron-builder": "^25.1.8"
-  },
   "scripts": {
-    "start": "set NODE_OPTIONS=--max_old_space_size=4096 && electron .",
+    "start": "electron .",
     "build": "electron-builder"
   },
-  "author": "rayson12",
-  "license": "ISC",
-  "dependencies": {
-    "echarts": "^5.6.0",
-    "python-shell": "^5.0.0"
-  },
-  "extraResources": [
-    {
-      "from": "node_modules/echarts/dist",
-      "to": "node_modules/echarts/dist"
-    }
-  ],
   "build": {
+    "electronDownload": {
+      "cache":"./cache/"
+    },
     "appId": "com.example.yourapp",
-    "productName": "YourApp",
+    "productName": "lazy_ledger",
     "directories": {
       "output": "dist"
     },
-    "win": {
-      "target": "nsis",
-      "icon": "build/icon.ico"
-    },
-    "mac": {
-      "target": "dmg",
-      "icon": "build/icon.icns"
-    },
-    "linux": {
-      "target": "AppImage",
-      "icon": "build/icon.png"
-    }
+    "extraResources": [
+      {
+        "from": "python",
+        "to": "python"
+      }
+    ]
   }
 }

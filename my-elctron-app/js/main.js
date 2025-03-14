@@ -10,16 +10,25 @@ const createWindow = () => {
     height: 600,
     autoHideMenuBar: true,
     webPreferences: {
-      devTools: false,
+      devTools: true,
       preload: Path.resolve(__dirname, './preload.js')
       }
   })
 
   win.loadFile(Path.join(__dirname, '../html/index.html'))
 }
+function getPythonScriptPath(scriptName) {
+  const basePath = app.isPackaged 
+    ?  Path.join(__dirname, '../../')// 打包后路径
+    : app.getAppPath();     // 开发环境路径
+
+  return Path.join(basePath, 'python', scriptName);
+}
 
 let chartWindow = null;
-
+ipcMain.handle('get-app-path', () => {
+  return getPythonScriptPath('get_months.py');
+});
 ipcMain.handle('open-chart-window', async (event, accounts) => {
   try {
     // 如果窗口已存在则聚焦
@@ -88,7 +97,7 @@ ipcMain.on('create-ledger', (event, ledgerName) => {
   console.log('creating ', ledgerName);
 
   // 调用 Python 脚本
-  const pythonProcess = spawn('python', [Path.join(__dirname, '../python/create_ledger.py'), ledgerName]);
+  const pythonProcess = spawn('python', [getPythonScriptPath('create_ledger.py'), ledgerName]);
 
   pythonProcess.stdout.on('data', (data) => {
     const result = JSON.parse(data.toString());  // 解析 Python 脚本的输出
@@ -128,7 +137,7 @@ ipcMain.handle('show-dialog', async (event, options) => {
 ipcMain.handle('get-accounts', async (event, ledgerId, year, month, category, subCategory, note, amountLeast, amountMost, timeStart, timeEnd, type,transactionId) => {
   return new Promise((resolve, reject) => {
     const args = [
-      './python/query.py',
+      getPythonScriptPath('query.py'),
       '--ledgerid', ledgerId.toString()
     ];
     if (transactionId) {
@@ -173,7 +182,7 @@ ipcMain.handle('get-accounts', async (event, ledgerId, year, month, category, su
 // 获取账本列表
 ipcMain.handle('get-ledgers', async () => {
   return new Promise((resolve, reject) => {
-    const pythonProcess = spawn('python', [Path.join(__dirname, '../python/get_ledger.py'), 'get-ledgers']);
+    const pythonProcess = spawn('python', [getPythonScriptPath('get_ledger.py'), 'get-ledgers']);
     handlePythonProcess(pythonProcess, resolve, reject);
   });
 });
@@ -182,7 +191,7 @@ ipcMain.handle('get-ledgers', async () => {
 ipcMain.handle('import-data', async (_, importPath, ledgerId) => {
   return new Promise((resolve, reject) => {
     const pythonProcess = spawn('python', [
-      '../python/import.py',
+      getPythonScriptPath('import.py'),
       importPath,
       ledgerId.toString()
     ], { encoding: 'gbk' });
@@ -195,7 +204,7 @@ ipcMain.handle('import-data', async (_, importPath, ledgerId) => {
 ipcMain.handle('get-categories', async (_, ledgerId) => {
   return new Promise((resolve, reject) => {
     const pythonProcess = spawn('python', [
-      Path.join(__dirname, '../python/cate_query.py'),
+      getPythonScriptPath('cate_query.py'),
       ledgerId.toString()
     ]);
     
@@ -208,7 +217,7 @@ ipcMain.handle('add-record', async (_, ledgerId, record) => {
   return new Promise((resolve, reject) => {
     console.log('adding record', record);
     const pythonProcess = spawn('python', [
-      Path.join(__dirname, '../python/insert.py'),
+      getPythonScriptPath('insert.py'),
       'add-entry',
       ledgerId.toString(),
       JSON.stringify(record)
@@ -223,7 +232,7 @@ ipcMain.handle('add-record', async (_, ledgerId, record) => {
 ipcMain.handle('save-preset', async (_, ledgerId, presetName, records) => {
   console.log('saving preset', presetName, records);
   console.log('args:',[
-      Path.join(__dirname, '../python/preset.py'),
+      getPythonScriptPath('preset.py'),
       '--mode', 'save',
       '--ledgerid', ledgerId.toString(),
       '--name', presetName,
@@ -231,7 +240,7 @@ ipcMain.handle('save-preset', async (_, ledgerId, presetName, records) => {
     ]);
   return new Promise((resolve, reject) => {
     const pythonProcess = spawn('python', [
-      Path.join(__dirname, '../python/preset.py'),
+      getPythonScriptPath('preset.py'),
       '--mode', 'save',
       '--ledgerid', ledgerId.toString(),
       '--name', presetName,
@@ -246,7 +255,7 @@ ipcMain.handle('save-preset', async (_, ledgerId, presetName, records) => {
 ipcMain.handle('get-presets', async (_, ledgerId) => {
   return new Promise((resolve, reject) => {
     const pythonProcess = spawn('python', [
-      Path.join(__dirname, '../python/preset.py'),
+      getPythonScriptPath('preset.py'),
     '--mode','list',
     '--ledgerid',ledgerId.toString()
     ]);
@@ -259,7 +268,7 @@ ipcMain.handle('get-presets', async (_, ledgerId) => {
 ipcMain.handle('delete-presets', async (_, ledgerId, presetIds) => {
   return new Promise((resolve, reject) => {
     const pythonProcess = spawn('python', [
-      Path.join(__dirname, '../python/preset.py'),
+      getPythonScriptPath('preset.py'),
       '--mode', 'remove',
       '--ledgerid', ledgerId.toString(),
       '--ids', JSON.stringify(presetIds)
@@ -272,7 +281,7 @@ ipcMain.handle('delete-presets', async (_, ledgerId, presetIds) => {
 ipcMain.handle('get-preset-detail', async (_, ledgerId, presetId) => {
   return new Promise((resolve, reject) => {
     const pythonProcess = spawn('python', [
-      Path.join(__dirname, '../python/preset.py'),
+      getPythonScriptPath('preset.py'),
       '--mode', 'detail',
       '--ledgerid', ledgerId.toString(),
       '--id', presetId
@@ -285,7 +294,7 @@ ipcMain.handle('get-preset-detail', async (_, ledgerId, presetId) => {
 ipcMain.handle('import-preset', async (_, ledgerId, presetId) => {
   return new Promise((resolve, reject) => {
     const pythonProcess = spawn('python', [
-      Path.join(__dirname, '../python/preset.py'),
+      getPythonScriptPath('preset.py'),
       '--mode', 'import',
       '--ledgerid', ledgerId.toString(),
       '--id', presetId
@@ -297,13 +306,13 @@ ipcMain.handle('import-preset', async (_, ledgerId, presetId) => {
 ipcMain.handle('delete-records', async (_, ledgerId, recordIds) => {
   return new Promise((resolve, reject) => {
     const pythonProcess = spawn('python', [
-      Path.join(__dirname, '../python/delete_and_update.py'),
+      getPythonScriptPath('delete_and_update.py'),
       'delete',
       ledgerId.toString(),
       JSON.stringify(recordIds)
     ]);
     console.log('args:',[
-      Path.join(__dirname, '../python/delete_and_update.py'),
+      getPythonScriptPath('delete_and_update.py'),
       ledgerId.toString(),
       JSON.stringify(recordIds)
     ]);
@@ -314,7 +323,7 @@ ipcMain.handle('delete-records', async (_, ledgerId, recordIds) => {
 ipcMain.handle('get-months-with-records', async (_, ledgerId) => {
   return new Promise((resolve, reject) => {
     const pythonProcess = spawn('python', [
-      Path.join(__dirname, '../python/get_months.py'),
+      getPythonScriptPath('get_months.py'),
       ledgerId.toString()
     ]);
     
@@ -326,7 +335,7 @@ ipcMain.handle('get-months-with-records', async (_, ledgerId) => {
 ipcMain.handle('update-records', async (_, ledgerId, recordIds, recordData) => {
   return new Promise((resolve, reject) => {
     const pythonProcess = spawn('python', [
-      Path.join(__dirname, '../python/delete_and_update.py'),
+      getPythonScriptPath('delete_and_update.py'),
       'update',
       ledgerId.toString(),
       JSON.stringify(recordIds),

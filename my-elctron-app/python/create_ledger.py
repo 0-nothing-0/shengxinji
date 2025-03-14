@@ -65,8 +65,9 @@ if __name__ == "__main__":
                 print(json.dumps({"status": "illegal", "message": "账本名称包含非法字符！"}))
             else:
                 create_ledger(ledger_name)
+                init_script_path = os.path.join(current_dir, 'init_db.py')
                 subprocess.run(
-                ["python", "./python/init_db.py", "--ledger_name", ledger_name],
+                ["python", init_script_path, "--ledger_name", ledger_name],
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL
             )
