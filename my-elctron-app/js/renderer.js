@@ -383,7 +383,7 @@ ledgerModalconfirmBtn.onclick = async () => {
 importModalconfirmBtn.onclick = async () => {
   const fileInput = document.getElementById('importFileInput');
   const selectedFile = fileInput.files[0];
-
+  console.log('selectedFile:', selectedFile.path);
   if (!selectedFile) {
     await myalert('请选择要导入的文件', 'error');
     return;
@@ -396,6 +396,7 @@ importModalconfirmBtn.onclick = async () => {
   }
 
   try {
+    console.log('importing file:', selectedFile.path);
     const result = await window.electronAPI.importData(selectedFile.path, ledgerId);
     
     if (result.success) {
@@ -520,6 +521,7 @@ async function showPresetModal() {
 async function loadPresets() {
   try {
     const result = await window.electronAPI.getPresets(getLedgerIdFromPath());
+    document.getElementById('presetPreview').innerHTML = '';
     presetSelector.innerHTML = '<option value="" disabled selected>请选择预设...</option>';
     emptyPresetTip.style.display = 'none';
 
@@ -540,20 +542,30 @@ async function loadPresets() {
 }
 
 function createRecordForm(record = {}) {
-  return `
-    <div class="record-form">
-      <input type="text" class="record-note" placeholder="备注" value="${record.note || ''}">
-      <input type="number" class="record-amount" placeholder="金额" value="${record.amount || ''}">
-      <select class="record-type">
-        <option value="支出" ${record.type === '支出' ? 'selected' : ''}>支出</option>
-        <option value="收入" ${record.type === '收入' ? 'selected' : ''}>收入</option>
-      </select>
-      <input type="text" class="record-category" list="presetPrimaryCategories" placeholder="一级分类" value="${record.category_name || ''}">
-      <input type="text" class="record-subcategory" list="presetSubCategories" placeholder="二级分类" value="${record.sub_category_name || ''}">
-      <button class="remove-record-btn">×</button>
-    </div>
+  const recordForm = document.createElement('div');
+  recordForm.className = 'record-form';
+  recordForm.innerHTML = `
+    <input type="text" class="record-note" placeholder="备注" value="${record.note || ''}">
+    <input type="number" class="record-amount" placeholder="金额" value="${record.amount || ''}">
+    <select class="record-type">
+      <option value="支出" ${record.type === '支出' ? 'selected' : ''}>支出</option>
+      <option value="收入" ${record.type === '收入' ? 'selected' : ''}>收入</option>
+    </select>
+    <input type="text" class="record-category" list="presetPrimaryCategories" placeholder="一级分类" value="${record.category_name || ''}">
+    <input type="text" class="record-subcategory" list="presetSubCategories" placeholder="二级分类" value="${record.sub_category_name || ''}">
+    <button class="remove-record-btn">×</button>
   `;
+
+  // 为删除按钮添加点击事件监听器
+  const removeButton = recordForm.querySelector('.remove-record-btn');
+  removeButton.addEventListener('click', () => {
+    recordForm.remove(); // 移除整个记录表单
+  });
+
+  return recordForm;
 }
+
+
 
 // ========== 事件监听 ==========
 addfromDefaultBtn.onclick = showPresetModal;
@@ -647,7 +659,8 @@ document.getElementById('deletePresetBtn').addEventListener('click', async () =>
 });
 // 添加新记录
 addRecordBtn.onclick = () => {
-  recordContainer.insertAdjacentHTML('beforeend', createRecordForm());
+  const recordForm = createRecordForm();
+  recordContainer.appendChild(recordForm); // 直接添加 DOM 元素
 };
 
 // 提交预设
@@ -694,6 +707,7 @@ submitPresetBtn.onclick = async () => {
 };
 // ========== 预设选择事件 ==========
 // 在显示预设记录时，动态绑定点击事件
+// 在显示预设记录时，动态绑定点击事件
 presetSelector.addEventListener('change', async (e) => {
   const presetId = e.target.value;
   console.log('presetSelector change: ' + presetId);
@@ -701,15 +715,17 @@ presetSelector.addEventListener('change', async (e) => {
   if (result.success) {
     const previewHTML = result.data.records.map(r => `
       <div class="preset-record">
+      <div class="preset-note">
+          <input type="text" class="preset-note-input" value="${r.note || '无备注'}">
+        </div>
         <div class="preset-record-header">
-          <span class="preset-amount">${Number(r.amount).toFixed(2)}</span>
           <span class="preset-type ${r.type === '支出' ? 'expense' : 'income'}">${r.type}</span>
           <span class="preset-category">${r.category_name || '未分类'}</span>
           <span class="preset-subcategory">${r.sub_category_name || '未分类'}</span>
-        </div>
-        <div class="preset-note">
-          ${r.note || '无备注'}
-        </div>
+          <span class="preset-amount">
+            <input type="number" class="preset-amount-input" value="${Number(r.amount).toFixed(2)}">
+          </span>
+        </div>   
       </div>
     `).join('');
     document.getElementById('presetPreview').innerHTML = previewHTML;
@@ -726,38 +742,43 @@ presetSelector.addEventListener('change', async (e) => {
 
 
 
+
 // 在预设模态框添加日期选择
 const importDateInput = document.createElement('input');
 importDateInput.type = 'date';
 importDateInput.id = 'presetImportDate';
 importPresetBtn.parentNode.insertBefore(importDateInput, importPresetBtn);
 
-// 修改导入事件处理
+// 修改导入事件处理函数
 importPresetBtn.addEventListener('click', async () => {
   const selectedDate = document.getElementById('presetImportDate').value;
   if (!selectedDate) {
     await myalert('请选择导入日期', 'warning');
     return;
   }
-// 获取修改后的记录
-const modifiedRecords = Array.from(presetPreview.querySelectorAll('.preview-item')).map(item => {
-  const noteInput = item.querySelector('input[id^="presetNote_"]');
-  const amountInput = item.querySelector('input[id^="presetAmount_"]');
-  const typeSelect = item.querySelector('select[id^="presetType_"]');
 
-  return ({
-    date: selectedDate, // 使用新日期
-    note: noteInput.value,
-    amount: parseFloat(amountInput.value),
-    type: typeSelect.value,
-    transaction_time: selectedDate + ' 00:00',
-    category_name: item.dataset.category,
-    sub_category_name: item.dataset.subcategory || null
+  // 获取修改后的记录
+  const modifiedRecords = Array.from(presetPreview.querySelectorAll('.preset-record')).map(item => {
+    const noteInput = item.querySelector('.preset-note-input');
+    const amountInput = item.querySelector('.preset-amount-input');
+    const type = item.querySelector('.preset-type').textContent.trim();
+    const category_name = item.querySelector('.preset-category').textContent.trim();
+    const sub_category_name = item.querySelector('.preset-subcategory').textContent.trim();
+
+    return {
+      date: selectedDate, // 使用新日期
+      note: noteInput.value,
+      amount: amountInput.value,
+      type: type,
+      transaction_time: selectedDate + ' 00:00',
+      category_name: category_name,
+      sub_category_name: sub_category_name || null
+    };
   });
-});
 
   try {
     // 批量提交修改后的记录
+    console.log('modifiedRecords: ', modifiedRecords);
     const results = await Promise.all(
       modifiedRecords.map(record => 
         window.electronAPI.addRecord(getLedgerIdFromPath(), record)

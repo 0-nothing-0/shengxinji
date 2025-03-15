@@ -10,10 +10,12 @@
   overflow: hidden;
   background: transparent; /* 移除半透明背景 */
   min-width: 600px;
+  max-height: 90vh;
 }
 
 .modal-content {
   background-color: #fefefe;
+  max-height: calc(100vh - 40px);
   margin: 20px;
   padding: 20px;
   border: 1px solid #ddd; /* 改用简单边框 */
@@ -22,6 +24,7 @@
   min-width: 600px;
   box-shadow: none; /* 移除阴影 */
   overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .modal h3 {
@@ -83,11 +86,14 @@
 /* 预设模态特殊样式 */
 #presetModal .modal-content {
   max-width: 800px;
+  overflow-y: auto;
 }
 #addAccountModal .modal-content label{
   margin: 5px;
 } 
-
+#filterModal .modal-content {
+  overflow-y: auto;
+}
 .record-form {
   padding: 10px;
   background: #f8f9fa;

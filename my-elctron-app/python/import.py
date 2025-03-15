@@ -94,27 +94,38 @@ def process_csv_and_store_to_db(conn,csv_file_path):
         ''')
         entries = []    
         # 遍历CSV文件的每一行
+                # 预处理字段映射（在循环外判断一次即可）
+        amount_column = '金额(元)' if '金额(元)' in csv_reader.fieldnames else '金额'
+        status_column = '交易状态' if '交易状态' in csv_reader.fieldnames else '当前状态'
+        goods_column = '商品' if '商品' in csv_reader.fieldnames else '商品说明'
+
         for row in csv_reader:
-           # print(row)
-            # 判断交易状态是否包含“成功”
-            if "成功" in row.get('交易状态', ''):
-                # 提取所需的列
+                # 统一判断交易状态列名
+                if "成功" not in row.get(status_column, ''):
+                    continue
+
+                # 统一处理金额列
+                amount_str = row.get(amount_column, '').replace(',', '').replace('¥', '') 
+                
+                # 统一商品信息字段
+                description_fields = [
+                    row.get('交易对方', ''),
+                    row.get(goods_column, ''),
+                    row.get('交易分类', ''),
+                    row.get('对方账号', ''),
+                    row.get('备注', '')  # 新增备注字段
+                ]
+                
+                # 剩余代码保持不变...
                 transaction_time = row.get('交易时间', '')
                 transaction_type = row.get('收/支', '')
-                amount_str = row.get('金额', '').replace(',', '')  # 去除逗号
-                description_fields = [
-                        row.get('交易对方', ''),
-                        row.get('商品', ''),
-                        row.get('交易分类', ''),
-                        row.get('对方账号', ''),
-                        row.get('商品说明', ''),
-                    ]
-                description = " ".join([field for field in description_fields if field])
                 try:
-                    amount = float(amount_str)  # 尝试将金额转换为浮点数
+                    amount = float(amount_str)
                 except ValueError:
                     print(f"警告：金额格式错误，跳过此行。金额值: {amount_str}")
                     continue
+                
+                description = " ".join([field for field in description_fields if field])
                 category_name,category_id=guess_category(conn,description)
                 # 插入数据到数据库表中
                 insert_entry(conn, transaction_type, amount, description, category_name, None, transaction_time)

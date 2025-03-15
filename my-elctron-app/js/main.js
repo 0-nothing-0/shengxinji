@@ -156,8 +156,9 @@ ipcMain.handle('get-accounts', async (event, ledgerId, year, month, category, su
       if (subCategory) args.push('--subcategory', subCategory);
       if (note) args.push('--note', note);
       if (amountLeast !== null || amountMost !== null) {
-        args.push('--amount', `${amountLeast || ''},${amountMost || ''}`);
-      }
+        if (amountLeast !== null) args.push('--amountLeast', amountLeast.toString());
+        if (amountMost !== null) args.push('--amountMost', amountMost.toString());
+    }    
       if (type) args.push('--type', type);
     }
     const pythonProcess = spawn('python', args);
@@ -189,7 +190,12 @@ ipcMain.handle('get-ledgers', async () => {
 
 // 导入数据
 ipcMain.handle('import-data', async (_, importPath, ledgerId) => {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve, reject) => 
+    {console.log('import args:', [
+      getPythonScriptPath('import.py'),
+      importPath,
+      ledgerId.toString()
+    ]);
     const pythonProcess = spawn('python', [
       getPythonScriptPath('import.py'),
       importPath,

@@ -128,7 +128,8 @@ def main():
     parser.add_argument('-m', '--month', type=int, help='月份')
     parser.add_argument('--category', help='类别')
     parser.add_argument('--note', help='备注')
-    parser.add_argument('--amount', nargs=2, type=float, metavar=('least', 'most'), help='金额范围')
+    parser.add_argument('--amountLeast', type=float, help='最小金额')
+    parser.add_argument('--amountMost', type=float, help='最大金额')
     parser.add_argument('--subcategory', help='二级分类')
     parser.add_argument('--type', choices=['支出', '收入'], help='收支类型')
     # 修改time参数解析
@@ -143,7 +144,7 @@ def main():
             print(json.dumps({'error': str(e)}))
         return
     # 解析金额范围
-    amount_min, amount_max = args.amount if args.amount else (None, None)
+    amount_min, amount_max = args.amountLeast, args.amountMost
     # 解析时间范围
     time_start, time_end = args.time if args.time else (None, None)
 
@@ -158,6 +159,7 @@ def main():
         subcategory=args.subcategory,
         note=args.note,
         amount_min=amount_min,
+        amount_max=amount_max,
         type=args.type,
             )
         print(json.dumps(entries))
