@@ -237,40 +237,70 @@ if (isEdit) {
   try {
     document.getElementById('addAccountModalconfirmBtn').innerText = '确认修改';
     document.getElementById('addAccountModalTitle').innerText = '修改记录';
-    // 获取选中记录的详细信息
-    const result = await window.electronAPI.getAccounts(
-      pre_ledgerid,
-      null, null, null, null, null, null, null, null, null,null,
-      recordIds[0]
-    );
-    console.log('showaddAccountModal result: ', result);
-    // 获取第一个记录的字段作为默认值
-    const firstRecord = result.data;
-    let fullDate = firstRecord.date;
-    if (firstRecord.time && !fullDate.includes('T')) {
-      fullDate += 'T' + firstRecord.time;
-    }
-    // 填充表单字段
-    addAccountDateinput.value = fullDate;
-    addAccountNoteinput.value = firstRecord.note;
-    addAcountMoneyinput.value = firstRecord.amount;
-    addAccountTypeinput.value = firstRecord.type;
-    addAccountCategoryinput.value = firstRecord.category_name;
-    addAccountSubCategoryinput.value = firstRecord.sub_category_name;
+    
+    // 清空表单字段
+    addAccountDateinput.value = '';
+    addAccountNoteinput.value = '';
+    addAcountMoneyinput.value = '';
+    addAccountTypeinput.value = '';
+    addAccountCategoryinput.value = '';
+    addAccountSubCategoryinput.value = '';
 
-    // 修改提交处理逻辑
+    if (recordIds.length === 1) {
+      // 仅当选择单条记录时填充表单
+      const result = await window.electronAPI.getAccounts(
+        pre_ledgerid,
+        null, null, null, null, null, null, null, null, null,null,
+        recordIds[0]
+      );
+      
+      const firstRecord = result.data;
+      let fullDate = firstRecord.date;
+      if (firstRecord.time && !fullDate.includes('T')) {
+        fullDate += 'T' + firstRecord.time;
+      }
+      
+      // 填充表单字段
+      addAccountDateinput.value = fullDate;
+      addAccountNoteinput.value = firstRecord.note;
+      addAcountMoneyinput.value = firstRecord.amount;
+      addAccountTypeinput.value = firstRecord.type;
+      addAccountCategoryinput.value = firstRecord.category_name;
+      addAccountSubCategoryinput.value = firstRecord.sub_category_name;
+    } else {
+      document.getElementById('addAccountModalTitle').innerText = '修改多条记录(未填充字段保持不变)';
+    }
+
     if (submitHandler) {
       document.getElementById('addAccountModalconfirmBtn').removeEventListener('click', submitHandler);
     }
+    
     submitHandler = async () => {
-      const updatedRecord = {
-        date: document.getElementById('addAccountDateInput').value,
-        note: document.getElementById('addAccountNoteInput').value,
-        amount: parseFloat(document.getElementById('addAccountMoneyInput').value),
-        type: document.getElementById('addAccountTypeInput').value,
-        category_name: document.getElementById('addAccountCategoryInput').value,
-        sub_category_name: document.getElementById('addAccountSubCategoryInput').value || null
-      };
+      const updatedRecord = {};
+      
+      // 仅收集有值的字段
+      const dateValue = document.getElementById('addAccountDateInput').value;
+      if (dateValue) updatedRecord.date = dateValue;
+      
+      const noteValue = document.getElementById('addAccountNoteInput').value;
+      if (noteValue) updatedRecord.note = noteValue;
+      
+      const amountValue = parseFloat(document.getElementById('addAccountMoneyInput').value);
+      if (!isNaN(amountValue)) updatedRecord.amount = amountValue;
+      
+      const typeValue = document.getElementById('addAccountTypeInput').value;
+      if (typeValue) updatedRecord.type = typeValue;
+      
+      const categoryValue = document.getElementById('addAccountCategoryInput').value;
+      if (categoryValue) updatedRecord.category_name = categoryValue;
+      
+      const subCategoryValue = document.getElementById('addAccountSubCategoryInput').value;
+      if (subCategoryValue) updatedRecord.sub_category_name = subCategoryValue;
+
+      if (Object.keys(updatedRecord).length === 0) {
+        await myalert('没有检测到任何修改！', 'warning');
+        return;
+      }
 
       try {
         const result = await window.electronAPI.updateRecords(
@@ -290,7 +320,7 @@ if (isEdit) {
   } catch (error) {
     await myalert('获取记录详情失败', 'error');
   }
-} else {
+}else {
   document.getElementById('addAccountModalconfirmBtn').innerText = '确认创建';
   document.getElementById('addAccountModalTitle').innerText = '新增记录';
   if (submitHandler) {
@@ -500,6 +530,7 @@ function updatePagination(currentPage) {
 
 async function showPresetModal() {
   presetModal.style.display = 'block';
+  document.getElementById('presetSelectMode').classList.add('active');
   loadPresets();
   loadPresetsForDelete();
   
@@ -521,8 +552,12 @@ async function showPresetModal() {
 async function loadPresets() {
   try {
     const result = await window.electronAPI.getPresets(getLedgerIdFromPath());
-    document.getElementById('presetPreview').innerHTML = '';
+    console.log('loadPresets result: '+ result.success);
+    console.log('loadPresets data: '+ result.data);
+    
+    // 重置选择器状态
     presetSelector.innerHTML = '<option value="" disabled selected>请选择预设...</option>';
+    presetSelector.disabled = false;  // 新增：始终启用选择器
     emptyPresetTip.style.display = 'none';
 
     if (result.success && result.data?.length > 0) {
@@ -534,12 +569,14 @@ async function loadPresets() {
       });
     } else {
       emptyPresetTip.style.display = 'block';
-      presetSelector.disabled = true;
+      presetSelector.disabled = true;  // 仅在确实无数据时禁用
     }
   } catch (err) {
     myalert('加载预设失败: ' + err.message, 'error');
+    presetSelector.disabled = false;  // 新增：异常时仍保持可用
   }
 }
+
 
 function createRecordForm(record = {}) {
   const recordForm = document.createElement('div');
@@ -798,9 +835,17 @@ importPresetBtn.addEventListener('click', async () => {
 
 // 关闭模态
 presetModalCloseBtn.onclick = () => {
+  document.querySelectorAll('.mode-content').forEach(el => {
+    el.classList.remove('active');
+  });
+  modeBtns.forEach(btn => {
+    if(btn.dataset.mode === 'select') {  
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
   presetModal.style.display = 'none';
-  presetSelectMode.style.display = 'block';
-  presetEditMode.style.display = 'none';
   recordContainer.innerHTML = '';
 };
 
