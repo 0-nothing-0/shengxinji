@@ -144,3 +144,8 @@ dist
 
 # testing
 *.csv
+*.mp4
+*.pptx
+my-elctron-app/todo
+*.pyc
+*.exe
