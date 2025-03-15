@@ -149,3 +149,6 @@ dist
 my-elctron-app/todo
 *.pyc
 *.exe
+*.zip
+my-electron-app/cache
+**/__pycache__
