@@ -1,5 +1,5 @@
 {
-  "name": "your-app-name",
+  "name": "lazy_ledger",
   "version": "1.0.0",
   "main": "./js/main.js",
   "scripts": {
@@ -10,7 +10,7 @@
     "electronDownload": {
       "cache": "./cache/"
     },
-    "appId": "com.example.yourapp",
+    "appId": "my.lazy_ledger.rayson12",
     "productName": "lazy_ledger",
     "directories": {
       "output": "dist"
@@ -23,6 +23,7 @@
     ]
   },
   "devDependencies": {
-    "electron": "^35.0.1"
-  }
+  "electron": "31.7.7"
+}
+
 }
